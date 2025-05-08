@@ -5,6 +5,9 @@
 import random
 import os
 import numpy as np
+import time
+import datetime
+import json
 
 class GeneticProblem:
     """
@@ -149,6 +152,9 @@ class GeneticProblem:
         # Create results directory if saving is enabled
         if save_results:
             os.makedirs(results_dir, exist_ok=True)
+
+        # Start timer
+        start_time = time.time()
         
         # Initialize population
         population = self.initialize_population(population_size)
@@ -157,10 +163,13 @@ class GeneticProblem:
         best_individual = None
         best_fitness = float('-inf')
         fitness_history = []
+        average_fitness_history = []
         cache_hits = 0
         cache_misses = 0
-        
+        performance_log = []
+
         for generation in range(generations):
+            gen_start_time = time.time()
             print(f"Generation {generation + 1}/{generations}")
             
             # Evaluate fitness - with caching
@@ -176,6 +185,11 @@ class GeneticProblem:
                     fitness_scores.append(fitness_value)
                     cache_misses += 1
             
+            #Calculate stats
+            average_fitness = sum(fitness_scores) / len(fitness_scores)
+            max_fitness = max(fitness_scores)
+            min_fitness = min(fitness_scores)
+
             # Find best individual in this generation
             gen_best_idx = fitness_scores.index(max(fitness_scores))
             gen_best_individual = population[gen_best_idx]
@@ -189,8 +203,25 @@ class GeneticProblem:
             
             # Save fitness history
             fitness_history.append(gen_best_fitness)
+            average_fitness_history.append(average_fitness)
+        
             print(f"Best fitness: {gen_best_fitness:.6f} (Cache hits: {cache_hits}, misses: {cache_misses})")
             
+            # Calculate generation time
+            gen_time = time.time() - gen_start_time
+
+            # Log performance metrics
+            performance_log.append({
+                'generation': generation + 1,
+                'best_fitness': max_fitness,
+                'avg_fitness': average_fitness,
+                'min_fitness': min_fitness,
+                'time_seconds': gen_time,
+                'cache_hits': cache_hits,
+                'cache_misses': cache_misses
+            })
+            
+
             # Optional: Save results for this generation
             if save_results:
                 self.save_generation_results(gen_best_individual, generation, results_dir)
@@ -205,10 +236,14 @@ class GeneticProblem:
                     mutation_rate=mutation_rate,
                     selection_method=selection_method
                 )
+
+        # Calculate total execution time
+        total_time = time.time() - start_time
         
         # Save final results
         if save_results:
             self.save_best_results(best_individual, results_dir)
+            self.save_performance_report(performance_log, best_individual, total_time, results_dir)
         
         # Cache statistics
         print(f"\nCache statistics: {cache_hits} hits, {cache_misses} misses")
@@ -216,7 +251,92 @@ class GeneticProblem:
             hit_rate = cache_hits / (cache_hits + cache_misses) * 100
             print(f"Cache hit rate: {hit_rate:.2f}%")
         
-        return best_individual, best_fitness, fitness_history
+        bestResult = None
+        bestResult = self.getBestResult(best_individual)
+
+        return best_individual, best_fitness, fitness_history, bestResult
+    
+    def save_performance_report(self, performance_log, best_individual, total_time, results_dir):
+        """
+        Save a detailed performance report of the genetic algorithm run.
+        
+        Args:
+            performance_log: List of dictionaries with performance metrics for each generation
+            best_individual: The overall best individual found
+            total_time: Total execution time in seconds
+            results_dir: Directory to save the report
+        """
+        # Create report filename with timestamp
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        report_filename = os.path.join(results_dir, f"performance_report_{timestamp}.txt")
+        
+        with open(report_filename, 'w') as f:
+            # Write header
+            f.write("=" * 80 + "\n")
+            f.write(f"GENETIC ALGORITHM PERFORMANCE REPORT\n")
+            f.write(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("=" * 80 + "\n\n")
+            
+            # Write configuration - fix the population size reference
+            f.write("CONFIGURATION\n")
+            f.write("-" * 80 + "\n")
+            # Instead of len(performance_log[0]['best_fitness']), pass population_size directly through run()
+            f.write(f"Population Size: {getattr(self, 'population_size', 'N/A')}\n")
+            f.write(f"Generations: {len(performance_log)}\n")
+            # Check if these attributes exist before using them
+            for attr in ['mutation_rate', 'crossover_rate', 'elitism', 'selection_method']:
+                if hasattr(self, attr):
+                    f.write(f"{attr.capitalize()}: {getattr(self, attr)}\n")
+            if hasattr(self, 'image_path'):
+                f.write(f"Image Path: {self.image_path}\n")
+            f.write(f"Total Execution Time: {total_time:.2f} seconds\n")
+            f.write(f"Average Time per Generation: {total_time/len(performance_log):.2f} seconds\n\n")
+            
+            # Write best solution
+            f.write("BEST SOLUTION\n")
+            f.write("-" * 80 + "\n")
+            f.write(f"Best Fitness: {max(entry['best_fitness'] for entry in performance_log):.6f}\n")
+            f.write(f"Found in Generation: {next(i+1 for i, entry in enumerate(performance_log) if entry['best_fitness'] == max(e['best_fitness'] for e in performance_log))}\n")
+            f.write(f"Best Chromosome:\n{self._format_individual(best_individual)}\n\n")
+            
+            # Write generation statistics
+            f.write("GENERATION STATISTICS\n")
+            f.write("-" * 80 + "\n")
+            f.write("Gen | Best Fitness | Avg Fitness | Min Fitness | Time (s)\n")
+            f.write("-" * 80 + "\n")
+            
+            for entry in performance_log:
+                f.write(f"{entry['generation']:3d} | {entry['best_fitness']:12.6f} | {entry['avg_fitness']:11.6f} | {entry['min_fitness']:11.6f} | {entry['time_seconds']:8.2f}\n")
+            
+            # Write cache statistics
+            last_entry = performance_log[-1]
+            total_evaluations = last_entry['cache_hits'] + last_entry['cache_misses']
+            hit_rate = last_entry['cache_hits'] / total_evaluations * 100 if total_evaluations > 0 else 0
+            
+            f.write("\nCACHE STATISTICS\n")
+            f.write("-" * 80 + "\n")
+            f.write(f"Total Evaluations: {total_evaluations}\n")
+            f.write(f"Cache Hits: {last_entry['cache_hits']} ({hit_rate:.2f}%)\n")
+            f.write(f"Cache Misses: {last_entry['cache_misses']}\n")
+        
+        print(f"Performance report saved to {report_filename}")
+
+    def _format_individual(self, individual):
+        """Format an individual for readable output in the report."""
+        if isinstance(individual, np.ndarray):
+            if individual.ndim == 2 and individual.shape[1] == 3:  # RGB colors
+                return "\n".join([f"  Color {i+1}: RGB({c[0]}, {c[1]}, {c[2]})" 
+                            for i, c in enumerate(individual)])
+            return str(individual)
+        return str(individual)
+
+    def getBestResult(self, best_individual):
+        """
+        Get the best result from the best individual.
+        Override in subclasses if needed.
+        Default implementation returns None.
+        """
+        return None
     
     def evolve_population(self, population, fitness_scores, elitism=2, 
                         crossover_rate=0.8, mutation_rate=0.1, selection_method='roulette'):
