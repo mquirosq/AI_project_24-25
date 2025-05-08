@@ -28,14 +28,16 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         self.image = load_image(image_path)
         if self.image is None:
             raise ValueError(f"Failed to load image from {image_path}")
-        palette = compute_palette_kmeans(self.image, num_colors)
-        kmeans_image = convert_image_to_palette(self.image, palette)
-        save_image(kmeans_image, os.path.join(results_dir, "kmeans_image.png"))
-        save_palette(palette, os.path.join(results_dir, "kmeans_palette.png"))
-        display_image_with_palette_comparison(self.image, kmeans_image, palette, "Initial Palette")
+        
+        if kMeans:
+            palette = compute_palette_kmeans(self.image, num_colors)
+            kmeans_image = convert_image_to_palette(self.image, palette)
+            save_image(kmeans_image, os.path.join(results_dir, "kmeans_image.png"))
+            save_palette(palette, os.path.join(results_dir, "kmeans_palette.png"))
+            display_image_with_palette_comparison(self.image, kmeans_image, palette, "Initial Palette")
 
-        print(f"Population size: {population_size}, Colors per palette: {num_colors}, Generations: {generations}")
-        print(f"KMeans fitness: {problem.compute_fitness(palette)}")
+            print(f"Population size: {population_size}, Colors per palette: {num_colors}, Generations: {generations}")
+            print(f"KMeans fitness: {self.compute_fitness(palette)}")
             
         self.image_path = image_path
         self.num_colors = num_colors
@@ -207,10 +209,10 @@ class ImagePaletteGeneticProblem(GeneticProblem):
 # Usage example
 if __name__ == "__main__":
     # Example configuration
-    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "cat.jpg")
+    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "nasa.jpg")
     num_colors = 16
     population_size = 20
-    generations = 30
+    generations = 40
     
     # Create results directory based on image name
     # This will create a directory named "tests/squareFour" in the same directory as the image
