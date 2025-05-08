@@ -196,6 +196,20 @@ def generate_random_palette(num_colors):
     palette = np.random.randint(0, 256, size=(num_colors, 3), dtype=np.uint8)
     return palette
 
+def generate_random_palette_with_colors(num_colors, colors):
+    """Generate a random color palette with specified colors."""
+    num_available = len(colors)
+    
+    if num_available == 0:
+        raise ValueError("No colors provided to choose from")
+    
+    # Generate random indices to select colors
+    indices = np.random.randint(0, num_available, size=num_colors)
+    
+    # Use the indices to select colors from the provided set
+    palette = np.array([colors[i] for i in indices], dtype=np.uint8)
+    return palette
+
 def euclidean_distance(image1, image2):
     """
     Compute the Euclidean distance between two images.

@@ -7,7 +7,7 @@ from helper import (
 import os
 import numpy as np
 import random
-
+from skimage import color
 from heuristics import compute_palette_kmeans
 
 class ImagePaletteGeneticProblem(GeneticProblem):
@@ -66,8 +66,6 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         return fitness
     
     def compute_fitness(self, individual):
-        from skimage import color
-        
         # Convert image and palette to LAB color space
         image_lab = color.rgb2lab(self.image / 255.0)
         
@@ -192,7 +190,6 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             print(f"Error saving best results: {e}")
 
     def initialize_population(self, size):
-        # TODO: Add a parameter to use KMeans palette as the first individual
         """Initialize a population of random palettes."""
         population = []
         if self.kMeans:
@@ -205,6 +202,10 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             population.append(individual)
         return population
 
+    def getBestResult(self, best_individual):
+        """Get the best result from the best individual."""
+        converted_image = convert_image_to_palette(self.image, best_individual)
+        return converted_image
 
 # Usage example
 if __name__ == "__main__":
@@ -221,7 +222,7 @@ if __name__ == "__main__":
     # Create and run the genetic algorithm
     problem = ImagePaletteGeneticProblem(image_path, num_colors, kMeans=False)
     
-    best_palette, best_fitness, fitness_history = problem.run(
+    best_palette, best_fitness, fitness_history, bestImage = problem.run(
         population_size=population_size,
         generations=generations,
         mutation_rate=0.2,
@@ -233,6 +234,7 @@ if __name__ == "__main__":
     )
     
     print("\nGenetic algorithm completed.")
+    print(f"Best palette: {best_palette}")
     print(f"Best palette fitness: {best_fitness:.6f}")
     
     # Plot fitness evolution
