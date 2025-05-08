@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-# Function to load an image from the images directory and convert it to RGB format
+
 def load_image(image_path):
     """Load an image from the specified path and convert it to RGB format."""
     # Read the image using OpenCV
@@ -105,6 +105,57 @@ def display_image_with_palette(image, palette=None, title="Image with Color Pale
     plt.tight_layout()
     plt.show()
 
+def display_image_with_palette_comparison(original, image, palette=None, title="Image with Color Palette"):
+    """
+    Display an original image and a converted image with its color palette.
+    
+    Args:
+        original: Original image to display
+        image: Converted image to display
+        palette: Color palette to display (if None, computes from image)
+        title: Title for the figure
+    """
+    
+    # Compute palette if not provided
+    if palette is None:
+        palette = compute_palette(image)
+    
+    # Create a figure with two subplots
+    fig, axs = plt.subplots(1, 3, figsize=(12, 6), gridspec_kw={'width_ratios': [3, 3, 1]})
+    
+    # Display the original image in the first subplot
+    axs[0].imshow(original)
+    axs[0].set_title("Original Image")
+    axs[0].axis('off')
+    
+    # Create palette display image
+    num_colors = len(palette)
+    box_height = original.shape[0] // num_colors
+    
+    # Create palette image with one color per row
+    palette_width = 100
+    palette_img = np.zeros((original.shape[0], palette_width, 3), dtype=np.uint8)
+    
+    for i in range(num_colors):
+        start_y = i * box_height
+        end_y = min(start_y + box_height, original.shape[0])
+        palette_img[start_y:end_y, :] = palette[i]
+
+    image = convert_image_to_palette(image, palette)  # Convert image to palette colors
+    
+    # Display the converted image in the second subplot
+    axs[1].imshow(image)
+    axs[1].set_title(f"Converted Image)")
+    axs[1].axis('off')
+
+    axs[2].imshow(palette_img)
+    axs[2].set_title(f"Color Palette ({num_colors} colors)")
+    axs[2].axis('off')
+    
+    # Set the overall title
+    fig.suptitle(title, fontsize=16)
+    plt.tight_layout()
+    plt.show()
 
 def convert_image_to_palette(image, palette):
     """
@@ -144,3 +195,42 @@ def generate_random_palette(num_colors):
     # Generate random colors in the range [0, 255]
     palette = np.random.randint(0, 256, size=(num_colors, 3), dtype=np.uint8)
     return palette
+
+def euclidean_distance(image1, image2):
+    """
+    Compute the Euclidean distance between two images.
+    
+    Args:
+        image1: First image
+        image2: Second image
+    
+    Returns:
+        Euclidean distance between the two images
+    """
+    # Ensure both images are the same size
+    if image1.shape != image2.shape:
+        raise ValueError("Images must have the same dimensions to compute Euclidean distance.")
+    
+    # Compute the Euclidean distance
+    distance = np.sqrt(np.sum((image1 - image2) ** 2))
+    
+    return distance
+
+def save_image(image, filename):
+    """Save an image to a file."""
+    # Convert the image from RGB to BGR format for OpenCV
+    image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    # Save the image using OpenCV
+    cv2.imwrite(filename, image_bgr)
+
+def save_palette(palette, filename):
+    """Save a color palette to a file."""
+    # Create a blank image to display the palette
+    palette_image = np.zeros((100, 100 * len(palette), 3), dtype=np.uint8)
+    
+    # Fill the palette image with the colors
+    for i in range(len(palette)):
+        palette_image[:, i * 100:(i + 1) * 100] = palette[i]
+    
+    # Save the palette image using OpenCV
+    save_image(palette_image, filename)
