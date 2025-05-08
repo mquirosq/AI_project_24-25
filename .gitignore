@@ -1,0 +1,5 @@
+# Ignore images/tests folder
+AI_project/images/tests
+__pycache__/
+*.py[cod]
+*$py.class
