@@ -16,7 +16,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
     Genetic algorithm for finding an optimal color palette for an image.
     """
     
-    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False, crossover_method='uniform'):
+    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False, crossover_method='uniform', save_results=True):
         """
         Initialize the problem with an image and palette size.
         
@@ -27,7 +27,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         """
         if not hasattr(self, 'results_dir'):
             self.results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "unrestricted")
-        super().__init__(self.results_dir, True)
+        super().__init__(self.results_dir, save_results=save_results)
         
         self.image = load_image(image_path)
         if self.image is None:
