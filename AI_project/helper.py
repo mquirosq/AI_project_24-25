@@ -145,8 +145,6 @@ def display_image_with_palette_comparison(original, image, palette=None, title="
         end_y = min(start_y + box_height, original.shape[0])
         palette_img[start_y:end_y, :] = palette[i]
 
-    image = convert_image_to_palette(image, palette)  # Convert image to palette colors
-    
     # Display the converted image in the second subplot
     axs[1].imshow(image)
     axs[1].set_title(f"Converted Image ({num_colors} colors)")
@@ -159,12 +157,13 @@ def display_image_with_palette_comparison(original, image, palette=None, title="
     # Set the overall title
     fig.suptitle(title, fontsize=16)
     plt.tight_layout()
-    plt.show()
 
     if save_path:
         # Save the figure to the specified path
         fig.savefig(save_path, bbox_inches='tight', dpi=300)
         print(f"Figure saved to {save_path}")
+    
+    plt.show()
 
 def convert_image_to_palette(image, palette):
     """

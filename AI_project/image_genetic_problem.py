@@ -9,13 +9,14 @@ import numpy as np
 import random
 from skimage import color
 from heuristics import compute_palette_kmeans
+import cv2
 
 class ImagePaletteGeneticProblem(GeneticProblem):
     """
     Genetic algorithm for finding an optimal color palette for an image.
     """
     
-    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False):
+    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False):
         """
         Initialize the problem with an image and palette size.
         
@@ -44,6 +45,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         self._image_name = os.path.basename(image_path)
         self.kMeans = kMeans
         self.cache_size = cache_size
+        self.use_mutate_diverse = mutate_diverse
     
     def generate_individual(self):
         """Generate a random color palette."""
@@ -66,6 +68,11 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         return fitness
     
     def compute_fitness(self, individual):
+        """
+        Calculate fitness of a palette based on how well it represents the image.
+        Lower distance means higher fitness.
+        Add a penalty for repeated colors in the palette, as they should be minimized.
+        """
         # Convert image and palette to LAB color space
         image_lab = color.rgb2lab(self.image / 255.0)
         
@@ -76,7 +83,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         # Calculate distance in LAB space (perceptually uniform)
         distance = np.mean(np.sqrt(np.sum((image_lab - converted_lab)**2, axis=2)))
         
-        return 1 / (1 + distance)
+        return 1 / (1 + distance + (self.num_colors - len(np.unique(individual, axis=0))))
     
     def crossover(self, parent1, parent2):
         """
@@ -131,19 +138,20 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         
         return individual
     
-    def mutate_rgb_channels(self, individual, mutation_rate, max_change=30):
+    def mutate_diverse(self, individual, mutation_rate):
         """
-        Mutate a palette by modifying RGB channels slightly.
+        Mutate a palette by replacing the closest two colors with random ones.
         """
-        individual = np.array(individual)  # Ensure it's a numpy array
-        
-        for i in range(len(individual)):
-            # For each color, decide if we want to mutate it
+        # Get the two closest colors in the palette using LAB color space
+        individual_lab = cv2.cvtColor(individual.reshape(1, -1, 3), cv2.COLOR_RGB2LAB)[0]
+        distances = np.linalg.norm(individual_lab[:, np.newaxis] - individual_lab, axis=2)
+        np.fill_diagonal(distances, np.inf)
+        closest_indices = np.unravel_index(np.argmin(distances), distances.shape)
+        # Mutate the closest colors with a certain probability
+        for i in closest_indices:
             if random.random() < mutation_rate:
-                # For each channel (R,G,B), make a small random change
-                delta = np.random.randint(-max_change, max_change+1, size=3)
-                individual[i] = np.clip(individual[i] + delta, 0, 255).astype(np.uint8)
-        
+                individual[i] = np.random.randint(0, 256, size=3, dtype=np.uint8)
+
         return individual
     
     def save_generation_results(self, best_palette, generation, results_dir):
@@ -183,7 +191,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             save_image(final_image, image_filename)
             
             # Show the final result
-            display_image_with_palette_comparison(self.image, final_image, best_palette, "Best Overall Palette", results_dir)
+            display_image_with_palette_comparison(self.image, final_image, best_palette, "Best Overall Palette", results_dir + "/final_comparison.png")
             
             print("Saved overall best results")
         except Exception as e:
@@ -210,7 +218,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
 # Usage example
 if __name__ == "__main__":
     # Example configuration
-    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "nasa.jpg")
+    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "squareFour.jpg")
     num_colors = 16
     population_size = 20
     generations = 40
@@ -220,7 +228,7 @@ if __name__ == "__main__":
     results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "unrestricted")
 
     # Create and run the genetic algorithm
-    problem = ImagePaletteGeneticProblem(image_path, num_colors, kMeans=False)
+    problem = ImagePaletteGeneticProblem(image_path, num_colors, kMeans=False, mutate_diverse=True)
     
     best_palette, best_fitness, fitness_history, bestImage = problem.run(
         population_size=population_size,

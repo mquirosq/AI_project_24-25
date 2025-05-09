@@ -366,7 +366,11 @@ class GeneticProblem:
                     child = np.array(child)
             
             # Mutate
-            child = self.mutate(child, mutation_rate)
+            # if we have the attribute mutate_diverse then use the self.mutate_diverse method
+            if hasattr(self, 'use_mutate_diverse'):
+                child = self.mutate_diverse(child, mutation_rate)
+            else:
+                child = self.mutate(child, mutation_rate)
             
             # Add to new population
             new_population.append(child)
