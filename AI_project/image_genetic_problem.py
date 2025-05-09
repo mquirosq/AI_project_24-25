@@ -10,6 +10,7 @@ import random
 from skimage import color
 from heuristics import compute_palette_kmeans
 import cv2
+import datetime
 
 class ImagePaletteGeneticProblem(GeneticProblem):
     """
@@ -256,6 +257,98 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         """Get the best result from the best individual."""
         converted_image = convert_image_to_palette(self.image, best_individual)
         return converted_image
+    
+    def save_performance_report(self, performance_log, best_individual, total_time, population_size):
+        """
+        Save a detailed performance report of the genetic algorithm run.
+        
+        Args:
+            performance_log: List of dictionaries with performance metrics for each generation
+            best_individual: The overall best individual found
+            total_time: Total execution time in seconds
+            results_dir: Directory to save the report
+        """
+        # Create report filename with timestamp
+        timestamp = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+        report_filename = os.path.join(self.results_dir, f"performance_report_{timestamp}.txt")
+        
+        with open(report_filename, 'w') as f:
+            # Write header
+            f.write("=" * 80 + "\n")
+            f.write(f"GENETIC ALGORITHM PERFORMANCE REPORT\n")
+            f.write(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("=" * 80 + "\n\n")
+            
+            # Basic information
+            f.write("BASIC INFORMATION\n")
+            f.write("-" * 80 + "\n")
+            f.write(f"Image Name: {self._image_name}\n")
+            f.write(f"Image Path: {self.image_path}\n")
+            f.write(f"Number of Colors: {self.num_colors}\n")
+
+            # Write configuration
+            f.write("CONFIGURATION\n")
+            f.write("-" * 80 + "\n")
+            f.write(f"Population Size: {population_size}\n")
+            f.write(f"Generations: {len(performance_log)}\n")
+
+            f.write(f"Mutation Rate: {self.mutation_rate}\n")
+            f.write(f"Crossover Rate: {self.crossover_rate}\n")
+            f.write(f"Elitism: {self.elitism}\n")
+            f.write(f"Selection Method: {self.selection_method}\n")
+            f.write(f"Adaptation Rate: {self.adaptation_rate}\n")
+            f.write(f"Adaptation Threshold: {self.adaptation_threshold}\n")
+            f.write(f"Halting Stagnation Threshold: {self.halting_stagnation_threshold}\n")
+            f.write(f"Population Size: {population_size}\n\n")
+
+            f.write(f"Uses KMeans: {'Yes' if self.kMeans else 'No'}\n")
+            f.write(f"Uses Diverse Mutation: {'Yes' if self.use_mutate_diverse else 'No'}\n")
+            f.write(f"Crossover Method: {self.crossover_method}\n\n")
+
+            f.write(f"Total Execution Time: {total_time:.2f} seconds\n")
+            f.write(f"Average Time per Generation: {total_time/len(performance_log):.2f} seconds\n\n")
+            
+            # Write best solution
+            f.write("BEST SOLUTION\n")
+            f.write("-" * 80 + "\n")
+            f.write(f"Best Fitness: {max(entry['best_fitness'] for entry in performance_log):.6f}\n")
+            f.write(f"Found in Generation: {next(i+1 for i, entry in enumerate(performance_log) if entry['best_fitness'] == max(e['best_fitness'] for e in performance_log))}\n")
+            f.write(f"Best Chromosome:\n{self._format_individual(best_individual)}\n\n")
+            f.write(f"Total Generations: {len(performance_log)}\n")
+
+            # Write generation statistics with stagnation info
+            f.write("GENERATION STATISTICS\n")
+            f.write("-" * 110 + "\n")
+            f.write("Gen | Best Fitness | Avg Fitness | Min Fitness | Stagnation | Mutation Rate | Adapted | Time (s)\n")
+            f.write("-" * 110 + "\n")
+            
+            for entry in performance_log:
+                mutation_adapted = "Yes" if entry.get('mutation_adapted', False) else "No"
+                f.write(f"{entry['generation']:3d} | {entry['best_fitness']:12.6f} | {entry['avg_fitness']:11.6f} | "
+                    f"{entry['min_fitness']:11.6f} | {entry.get('stagnation_count', 0):10d} | "
+                    f"{entry.get('current_mutation_rate', 0.0):12.6f} | {mutation_adapted:7s} | {entry['time_seconds']:8.2f}\n")
+            
+            # Write cache statistics
+            last_entry = performance_log[-1]
+            total_evaluations = last_entry['cache_hits'] + last_entry['cache_misses']
+            hit_rate = last_entry['cache_hits'] / total_evaluations * 100 if total_evaluations > 0 else 0
+            
+            f.write("\nCACHE STATISTICS\n")
+            f.write("-" * 80 + "\n")
+            f.write(f"Total Evaluations: {total_evaluations}\n")
+            f.write(f"Cache Hits: {last_entry['cache_hits']} ({hit_rate:.2f}%)\n")
+            f.write(f"Cache Misses: {last_entry['cache_misses']}\n")
+        
+        print(f"Performance report saved to {report_filename}")
+
+    def _format_individual(self, individual):
+        """Format an individual for readable output in the report."""
+        if isinstance(individual, np.ndarray):
+            if individual.ndim == 2 and individual.shape[1] == 3:  # RGB colors
+                return "\n".join([f"  Color {i+1}: RGB({c[0]}, {c[1]}, {c[2]})" 
+                            for i, c in enumerate(individual)])
+            return str(individual)
+        return str(individual)
 
 # Usage example
 if __name__ == "__main__":
