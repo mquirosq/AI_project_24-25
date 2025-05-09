@@ -133,22 +133,6 @@ class GeneticProblem:
     def run(self, population_size, generations, mutation_rate=0.1, 
             crossover_rate=0.8, elitism=2, selection_method='roulette',
             save_results=False, results_dir="results"):
-        """
-        Run the genetic algorithm.
-        
-        Args:
-            population_size: Size of the population
-            generations: Number of generations to evolve
-            mutation_rate: Probability of mutation
-            crossover_rate: Probability of crossover
-            elitism: Number of best individuals to keep unchanged
-            selection_method: Method for selection ('roulette', 'tournament', 'rank')
-            save_results: Whether to save results
-            results_dir: Directory to save results
-            
-        Returns:
-            best_individual, best_fitness, fitness_history
-        """
         # Create results directory if saving is enabled
         if save_results:
             os.makedirs(results_dir, exist_ok=True)
@@ -196,9 +180,11 @@ class GeneticProblem:
             gen_best_fitness = fitness_scores[gen_best_idx]
             
             # Update overall best if needed
+            improved = False
             if gen_best_fitness > best_fitness:
                 best_fitness = gen_best_fitness
                 best_individual = gen_best_individual
+                improved = True
                 print(f"New best solution found! Fitness: {best_fitness:.6f}")
             
             # Save fitness history
@@ -218,12 +204,12 @@ class GeneticProblem:
                 'min_fitness': min_fitness,
                 'time_seconds': gen_time,
                 'cache_hits': cache_hits,
-                'cache_misses': cache_misses
+                'cache_misses': cache_misses,
+                'improved': improved
             })
             
-
-            # Optional: Save results for this generation
-            if save_results:
+            # Optional: Save results for this generation only if it improved
+            if save_results and improved:
                 self.save_generation_results(gen_best_individual, generation, results_dir)
             
             # Create next generation
@@ -239,24 +225,24 @@ class GeneticProblem:
 
         # Calculate total execution time
         total_time = time.time() - start_time
-        
+            
         # Save final results
         if save_results:
             self.save_best_results(best_individual, results_dir)
-            self.save_performance_report(performance_log, best_individual, total_time, results_dir)
-        
+            self.save_performance_report(performance_log, best_individual, total_time, results_dir, population_size)
+            
         # Cache statistics
         print(f"\nCache statistics: {cache_hits} hits, {cache_misses} misses")
         if cache_hits + cache_misses > 0:
             hit_rate = cache_hits / (cache_hits + cache_misses) * 100
             print(f"Cache hit rate: {hit_rate:.2f}%")
-        
+            
         bestResult = None
         bestResult = self.getBestResult(best_individual)
 
         return best_individual, best_fitness, fitness_history, bestResult
-    
-    def save_performance_report(self, performance_log, best_individual, total_time, results_dir):
+        
+    def save_performance_report(self, performance_log, best_individual, total_time, results_dir, population_size):
         """
         Save a detailed performance report of the genetic algorithm run.
         
@@ -277,13 +263,12 @@ class GeneticProblem:
             f.write(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=" * 80 + "\n\n")
             
-            # Write configuration - fix the population size reference
+            # Write configuration
             f.write("CONFIGURATION\n")
             f.write("-" * 80 + "\n")
-            # Instead of len(performance_log[0]['best_fitness']), pass population_size directly through run()
-            f.write(f"Population Size: {getattr(self, 'population_size', 'N/A')}\n")
+            f.write(f"Population Size: {population_size}\n")
             f.write(f"Generations: {len(performance_log)}\n")
-            # Check if these attributes exist before using them
+
             for attr in ['mutation_rate', 'crossover_rate', 'elitism', 'selection_method']:
                 if hasattr(self, attr):
                     f.write(f"{attr.capitalize()}: {getattr(self, attr)}\n")
