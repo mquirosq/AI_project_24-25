@@ -26,8 +26,10 @@ def load_all_images(images_dir):
     return images
 
 
-def display_image(image, window_name='Image'):
+def display_image (image, palette = None, window_name='Image'):
     """Display an image in a window."""
+    if palette != None:
+        window_name = f"{window_name} ({len(palette)} colors)"
     plt.imshow(image)
     plt.axis('off')  # Hide the axis
     plt.title(window_name)
@@ -78,7 +80,7 @@ def display_image_with_palette(image, palette=None, title="Image with Color Pale
     
     # Display the image in the first subplot
     axs[0].imshow(image)
-    axs[0].set_title("Original Image")
+    axs[0].set_title("Image")
     axs[0].axis('off')
     
     # Create palette display image
@@ -119,13 +121,15 @@ def display_image_with_palette_comparison(original, image, palette=None, title="
     # Compute palette if not provided
     if palette is None:
         palette = compute_palette(image)
+
+    originalPalette = compute_palette(original)
     
     # Create a figure with two subplots
     fig, axs = plt.subplots(1, 3, figsize=(12, 6), gridspec_kw={'width_ratios': [3, 3, 1]})
     
     # Display the original image in the first subplot
     axs[0].imshow(original)
-    axs[0].set_title("Original Image")
+    axs[0].set_title("Original Image ({} colors)".format(len(originalPalette)))
     axs[0].axis('off')
     
     # Create palette display image
@@ -145,7 +149,7 @@ def display_image_with_palette_comparison(original, image, palette=None, title="
     
     # Display the converted image in the second subplot
     axs[1].imshow(image)
-    axs[1].set_title(f"Converted Image)")
+    axs[1].set_title(f"Converted Image ({num_colors} colors)")
     axs[1].axis('off')
 
     axs[2].imshow(palette_img)
