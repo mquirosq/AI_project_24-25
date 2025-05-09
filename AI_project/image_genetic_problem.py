@@ -34,7 +34,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             kmeans_image = convert_image_to_palette(self.image, palette)
             save_image(kmeans_image, os.path.join(results_dir, "kmeans_image.png"))
             save_palette(palette, os.path.join(results_dir, "kmeans_palette.png"))
-            display_image_with_palette_comparison(self.image, kmeans_image, palette, "Initial Palette")
+            display_image_with_palette_comparison(self.image, kmeans_image, palette, "Initial kMeans Palette")
 
             print(f"Population size: {population_size}, Colors per palette: {num_colors}, Generations: {generations}")
             print(f"KMeans fitness: {self.compute_fitness(palette)}")
@@ -183,7 +183,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             save_image(final_image, image_filename)
             
             # Show the final result
-            display_image_with_palette_comparison(self.image, final_image, best_palette, "Best Overall Palette")
+            display_image_with_palette_comparison(self.image, final_image, best_palette, "Best Overall Palette", results_dir)
             
             print("Saved overall best results")
         except Exception as e:

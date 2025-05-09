@@ -107,7 +107,7 @@ def display_image_with_palette(image, palette=None, title="Image with Color Pale
     plt.tight_layout()
     plt.show()
 
-def display_image_with_palette_comparison(original, image, palette=None, title="Image with Color Palette"):
+def display_image_with_palette_comparison(original, image, palette=None, title="Image with Color Palette", save_path=None):
     """
     Display an original image and a converted image with its color palette.
     
@@ -160,6 +160,11 @@ def display_image_with_palette_comparison(original, image, palette=None, title="
     fig.suptitle(title, fontsize=16)
     plt.tight_layout()
     plt.show()
+
+    if save_path:
+        # Save the figure to the specified path
+        fig.savefig(save_path, bbox_inches='tight', dpi=300)
+        print(f"Figure saved to {save_path}")
 
 def convert_image_to_palette(image, palette):
     """

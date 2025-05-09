@@ -55,14 +55,14 @@ class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
 # Usage example
 if __name__ == "__main__":
     # Example configuration
-    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "squareFour.jpg")
-    num_colors = 6
+    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "houses.jpg")
+    num_colors = 16
     population_size = 10
-    generations = 10
+    generations = 50
     
     # Create results directory based on image name
-    # This will create a directory named "tests/squareFour" in the same directory as the image
-    results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0])
+    # This will create a directory named "tests/imageName/restricted" in the same directory as the image (images folder)
+    results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "restricted")
 
     # Create and run the genetic algorithm
     problem = ImagePaletteGeneticProblemRestricted(image_path, num_colors, kMeans=False)
