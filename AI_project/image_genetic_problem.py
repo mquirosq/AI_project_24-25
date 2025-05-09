@@ -146,7 +146,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         """
         Perform crossover between two parents to create a child.
         Match the closest colors from each parent, for each pair choose one color randomly.
-        Ensure no duplicates in the child.
+        If duplicates exist, fill with random color from any of the parents not already on child.
         """
         child = np.zeros_like(parent1)
         for i in range(len(parent1)):
@@ -164,7 +164,9 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         unique_colors = np.unique(child, axis=0)
         if len(unique_colors) < len(child):
             # If duplicates exist, randomly select from colors in any palette that are not in the child
-            available_colors = np.array([color for color in self.colors if not np.any(np.all(color == child, axis=1))])
+            parent_colors = np.concatenate([parent1, parent2], axis=0)
+            parent_colors = np.unique(parent_colors, axis=0)
+            available_colors = np.array([color for color in parent_colors if not np.any(np.all(color == child, axis=1))])
             if len(available_colors) < len(child):
                 # If not enough unique colors, fill with random colors from the original image palette
                 child = unique_colors[np.random.choice(len(unique_colors), len(child), replace=True)]
