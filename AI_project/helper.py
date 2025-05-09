@@ -4,10 +4,27 @@ import matplotlib.pyplot as plt
 import os
 
 def load_image(image_path):
-    """Load an image from the specified path and convert it to RGB format."""
-    # Read the image using OpenCV
+    """
+    Load an image from the specified path and convert it to RGB format.
+    
+    Args:
+        image_path: Path to the image file
+        
+    Returns:
+        RGB image as a numpy array
+        
+    Raises:
+        FileNotFoundError: If the image file does not exist
+        ValueError: If the image could not be loaded or is invalid
+    """
+    if not os.path.isfile(image_path):
+        raise FileNotFoundError(f"Image file not found: '{image_path}'")
+    
     image = cv2.imread(image_path)
-    # Convert the image from BGR to RGB format
+    
+    if image is None:
+        raise ValueError(f"Failed to load image: '{image_path}'. The file may be corrupted or in an unsupported format.")
+    
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     return image_rgb
 
@@ -104,7 +121,6 @@ def display_image_with_palette(image, palette=None, title="Image with Color Pale
     
     # Set the overall title
     fig.suptitle(title, fontsize=16)
-    plt.tight_layout()
     plt.show()
 
 def display_image_with_palette_comparison(original, image, palette=None, title="Image with Color Palette", save_path=None):
@@ -116,6 +132,7 @@ def display_image_with_palette_comparison(original, image, palette=None, title="
         image: Converted image to display
         palette: Color palette to display (if None, computes from image)
         title: Title for the figure
+        save_path: Path to save the figure (if None, does not save)
     """
     
     # Compute palette if not provided
@@ -123,43 +140,56 @@ def display_image_with_palette_comparison(original, image, palette=None, title="
         palette = compute_palette(image)
 
     originalPalette = compute_palette(original)
+    num_colors = len(palette)
     
-    # Create a figure with two subplots
-    fig, axs = plt.subplots(1, 3, figsize=(12, 6), gridspec_kw={'width_ratios': [3, 3, 1]})
+    # Calculate adaptive width for palette
+    color_width = min(200, max(30, 800 // num_colors))
+    palette_width = color_width * num_colors
+    palette_height = 50  # Slightly taller for better visibility
     
-    # Display the original image in the first subplot
-    axs[0].imshow(original)
-    axs[0].set_title("Original Image ({} colors)".format(len(originalPalette)))
-    axs[0].axis('off')
+    # Create a figure with proper spacing
+    fig = plt.figure(figsize=(12, 8))  # Reduced height since removing a row
+    
+    # Create a different grid layout with just 2 rows instead of 3
+    gs = plt.GridSpec(2, 2, height_ratios=[4, 1], hspace=0.3)
+    
+    # Display the original image in top-left
+    ax_orig = fig.add_subplot(gs[0, 0])
+    ax_orig.imshow(original)
+    ax_orig.set_title(f"Original Image ({len(originalPalette)} colors)")
+    ax_orig.axis('off')
+
+    # Display the converted image in top-right
+    ax_conv = fig.add_subplot(gs[0, 1])
+    ax_conv.imshow(image)
+    ax_conv.set_title(f"Converted Image ({num_colors} colors)")
+    ax_conv.axis('off')
+    
+    # Create palette display in the second row spanning both columns
+    ax_palette = fig.add_subplot(gs[1, :])
     
     # Create palette display image
-    num_colors = len(palette)
-    box_height = original.shape[0] // num_colors
+    palette_img = np.zeros((palette_height, palette_width, 3), dtype=np.uint8)
     
-    # Create palette image with one color per row
-    palette_width = 100
-    palette_img = np.zeros((original.shape[0], palette_width, 3), dtype=np.uint8)
-    
+    # Fill the palette image with the colors
     for i in range(num_colors):
-        start_y = i * box_height
-        end_y = min(start_y + box_height, original.shape[0])
-        palette_img[start_y:end_y, :] = palette[i]
+        start_x = i * color_width
+        end_x = min(start_x + color_width, palette_width)
+        palette_img[:, start_x:end_x] = palette[i]
 
-    # Display the converted image in the second subplot
-    axs[1].imshow(image)
-    axs[1].set_title(f"Converted Image ({num_colors} colors)")
-    axs[1].axis('off')
-
-    axs[2].imshow(palette_img)
-    axs[2].set_title(f"Color Palette ({num_colors} colors)")
-    axs[2].axis('off')
+    # Display the palette
+    ax_palette.imshow(palette_img)
+    ax_palette.set_title(f"Color Palette ({num_colors} colors)")
+    ax_palette.axis('off')
     
     # Set the overall title
-    fig.suptitle(title, fontsize=16)
-    plt.tight_layout()
-
+    fig.suptitle(title, fontsize=16, y=0.98)
+    
+    # Adjust layout to prevent overlap
+    # plt.subplots_adjust(hspace=0.3)  # Adjust space between rows
+    
     if save_path:
-        # Save the figure to the specified path
+        # Save the figure with tight bounding box
         fig.savefig(save_path, bbox_inches='tight', dpi=300)
         print(f"Figure saved to {save_path}")
     
@@ -208,13 +238,16 @@ def generate_random_palette_with_colors(num_colors, colors):
     """Generate a random color palette with specified colors."""
     num_available = len(colors)
     
-    if num_available == 0:
-        raise ValueError("No colors provided to choose from")
-    
-    # Generate random indices to select colors
-    indices = np.random.randint(0, num_available, size=num_colors)
-    
-    # Use the indices to select colors from the provided set
+    # Check if we have enough colors to choose from
+    if num_available < num_colors:
+        print(f"Warning: Requested {num_colors} unique colors, but only {num_available} are available.")
+        print("Some colors will be duplicated in the palette.")
+        # Fall back to original method with possible duplicates
+        indices = np.random.randint(0, num_available, size=num_colors)
+    else:
+        # Use random.choice to select unique colors
+        indices = np.random.choice(num_available, num_colors, replace=False)
+
     palette = np.array([colors[i] for i in indices], dtype=np.uint8)
     return palette
 
@@ -256,3 +289,57 @@ def save_palette(palette, filename):
     
     # Save the palette image using OpenCV
     save_image(palette_image, filename)
+
+def save_image_with_palette(image, palette, filename="image_with_palette.png"):
+    "Save an image with a color palette to a file"
+    # Create a figure with two subplots
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={'width_ratios': [3, 1]})
+    
+    # Display the image in the first subplot
+    axs[0].imshow(image)
+    axs[0].set_title("Image")
+    axs[0].axis('off')
+    
+    # Create palette display image
+    num_colors = len(palette)
+    palette_height = image.shape[0]  # Match image height
+    box_height = palette_height // num_colors
+    
+    # Create palette image with one color per row
+    palette_width = 100
+    palette_img = np.zeros((palette_height, palette_width, 3), dtype=np.uint8)
+    
+    for i in range(num_colors):
+        start_y = i * box_height
+        end_y = min(start_y + box_height, palette_height)
+        palette_img[start_y:end_y, :] = palette[i]
+    
+    # Display the palette in the second subplot
+    axs[1].imshow(palette_img)
+    axs[1].set_title(f"Color Palette ({num_colors} colors)")
+    axs[1].axis('off')
+
+    fig.savefig(filename, bbox_inches='tight', dpi=300)
+    plt.close(fig)
+
+def plot_fitness_evolution(fitness_history, save_path=None):
+    """
+    Plot the evolution of fitness over generations.
+    
+    Args:
+        fitness_history: List of fitness values for each generation
+        title: Title for the plot
+        save_path: Path to save the plot (if None, does not save)
+    """
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(1, len(fitness_history) + 1), fitness_history)
+    plt.title('Fitness Evolution')
+    plt.xlabel('Generation')
+    plt.ylabel('Fitness')
+    plt.grid(True)
+    
+    if save_path:
+        plt.savefig(save_path + "/fitness_history.png", bbox_inches='tight', dpi=300)
+        print(f"Plot saved to {save_path}")
+    
+    plt.show()

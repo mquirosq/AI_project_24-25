@@ -1,6 +1,6 @@
 from image_genetic_problem import ImagePaletteGeneticProblem 
 from helper import (
-    generate_random_palette_with_colors
+    generate_random_palette_with_colors, plot_fitness_evolution
 )
 import os
 import numpy as np
@@ -14,7 +14,7 @@ class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
     Genetic algorithm for finding an optimal color palette for an image where the colors must be part of the image.
     """
     
-    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False):
+    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False, crossover_method='uniform'):
         """
         Initialize the problem with an image and palette size.
         
@@ -24,7 +24,9 @@ class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
             cache_size: Maximum size of fitness cache
             kMeans: Whether to use KMeans for initial palette generation
         """
-        super().__init__(image_path, num_colors, cache_size, kMeans, mutate_diverse)
+        if not hasattr(self, 'results_dir'):
+            self.results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "restricted")
+        super().__init__(image_path, num_colors, cache_size, kMeans, mutate_diverse, crossover_method)
         self.colors = np.unique(self.image.reshape(-1, self.image.shape[2]), axis=0)
     
     def generate_individual(self):
@@ -73,16 +75,12 @@ class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
 if __name__ == "__main__":
     # Example configuration
     image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "squareFour.jpg")
-    num_colors = 16
+    num_colors = 10
     population_size = 20
-    generations = 40
-    
-    # Create results directory based on image name
-    # This will create a directory named "tests/imageName/restricted" in the same directory as the image (images folder)
-    results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "restricted")
+    generations = 3
 
     # Create and run the genetic algorithm
-    problem = ImagePaletteGeneticProblemRestricted(image_path, num_colors, kMeans=False, mutate_diverse=True)
+    problem = ImagePaletteGeneticProblemRestricted(image_path, num_colors, kMeans=False, mutate_diverse=True, crossover_method='closest_pairs', )
     
     best_palette, best_fitness, fitness_history, bestImage = problem.run(
         population_size=population_size,
@@ -92,7 +90,9 @@ if __name__ == "__main__":
         elitism=2,
         selection_method='tournament',
         save_results=True,
-        results_dir=results_dir
+        adaptation_rate=1.2,
+        adaptation_threshold=10, 
+        halting_stagnation_threshold=20
     )
     
     print("\nGenetic algorithm completed.")
@@ -100,12 +100,4 @@ if __name__ == "__main__":
     print(f"Best palette fitness: {best_fitness:.6f}")
     
     # Plot fitness evolution
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(1, generations+1), fitness_history)
-    plt.title('Fitness Evolution')
-    plt.xlabel('Generation')
-    plt.ylabel('Fitness')
-    plt.grid(True)
-    plt.savefig(os.path.join(results_dir, "fitness_evolution.png"))
-    plt.show()
+    plot_fitness_evolution(fitness_history, save_path = problem.results_dir)

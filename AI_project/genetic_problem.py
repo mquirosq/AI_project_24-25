@@ -7,7 +7,6 @@ import os
 import numpy as np
 import time
 import datetime
-import json
 
 class GeneticProblem:
     """
@@ -15,8 +14,12 @@ class GeneticProblem:
     Includes fitness caching to avoid redundant calculations.
     """
     
-    def __init__(self):
+    def __init__(self, results_dir=None, save_results=False):
         # Initialize fitness cache
+        if save_results:
+            timestamp = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+            self.results_dir = f"{results_dir}_{timestamp}"
+            os.makedirs(self.results_dir, exist_ok=True)
         self.fitness_cache = {}
     
     def generate_individual(self):
@@ -132,10 +135,30 @@ class GeneticProblem:
     
     def run(self, population_size, generations, mutation_rate=0.1, 
             crossover_rate=0.8, elitism=2, selection_method='roulette',
-            save_results=False, results_dir="results"):
-        # Create results directory if saving is enabled
-        if save_results:
-            os.makedirs(results_dir, exist_ok=True)
+            save_results=False, adaptation_rate=1, 
+            adaptation_threshold=10, halting_stagnation_threshold=None):
+        """
+        Run the genetic algorithm.
+
+        Args:
+            population_size: Number of individuals in the population
+            generations: Number of generations to evolve
+            mutation_rate: Probability of mutation
+            crossover_rate: Probability of crossover
+            elitism: Number of best individuals to keep unchanged
+            selection_method: Method for selection ('roulette', 'tournament', 'rank')
+            save_results: Whether to save results
+            results_dir: Directory to save results
+            adaptation_rate: Rate of mutation adaptation (0 for no adaptation)
+            adaptation_threshold: Number of generations to wait before adapting mutation rate
+            halting_stagnation_threshold: Number of generations to wait before halting if no improvement is detected
+    
+        Returns:
+            best_individual: The best individual found
+            best_fitness: The fitness of the best individual
+            fitness_history: List of fitness scores for each generation
+            bestResult: The best result from the best individual (if applicable)
+        """
 
         # Start timer
         start_time = time.time()
@@ -151,6 +174,9 @@ class GeneticProblem:
         cache_hits = 0
         cache_misses = 0
         performance_log = []
+
+        stagnation_count = 0
+        current_mutation_rate = mutation_rate
 
         for generation in range(generations):
             gen_start_time = time.time()
@@ -185,8 +211,26 @@ class GeneticProblem:
                 best_fitness = gen_best_fitness
                 best_individual = gen_best_individual
                 improved = True
+                stagnation_count = 0
                 print(f"New best solution found! Fitness: {best_fitness:.6f}")
+            else:
+                stagnation_count += 1
             
+            # Adapt mutation rate if stagnation occurs
+            mutation_adapted = False
+            if adaptation_rate > 1:
+                if stagnation_count >= adaptation_threshold:
+                    previous_mutation_rate = current_mutation_rate
+                    current_mutation_rate = min(0.5, current_mutation_rate * adaptation_rate)
+                    mutation_adapted = True
+                    print(f"Stagnation detected ({stagnation_count} generations). "
+                      f"Adjusting mutation rate from {previous_mutation_rate:.4f} to {current_mutation_rate:.4f}")
+                elif improved and current_mutation_rate != mutation_rate:
+                    current_mutation_rate = mutation_rate
+                    mutation_adapted = True
+                    print(f"Improvement detected. Reducing mutation rate to {current_mutation_rate:.4f}")
+
+
             # Save fitness history
             fitness_history.append(gen_best_fitness)
             average_fitness_history.append(average_fitness)
@@ -205,44 +249,50 @@ class GeneticProblem:
                 'time_seconds': gen_time,
                 'cache_hits': cache_hits,
                 'cache_misses': cache_misses,
-                'improved': improved
+                'improved': improved,
+                'stagnation_count': stagnation_count,
+                'current_mutation_rate': current_mutation_rate,
+                'mutation_adapted': mutation_adapted
             })
             
             # Optional: Save results for this generation only if it improved
             if save_results and improved:
-                self.save_generation_results(gen_best_individual, generation, results_dir)
+                self.save_generation_results(gen_best_individual, generation)
             
             # Create next generation
-            if generation < generations - 1:  # Don't evolve after the last generation
+            if generation < generations - 1 and (halting_stagnation_threshold == None or halting_stagnation_threshold > stagnation_count):
                 population = self.evolve_population(
                     population, 
                     fitness_scores, 
                     elitism=elitism, 
                     crossover_rate=crossover_rate, 
-                    mutation_rate=mutation_rate,
+                    mutation_rate=current_mutation_rate,
                     selection_method=selection_method
                 )
+            else:
+                print("Halting evolution due to stagnation.")
+                break
 
         # Calculate total execution time
         total_time = time.time() - start_time
             
         # Save final results
         if save_results:
-            self.save_best_results(best_individual, results_dir)
-            self.save_performance_report(performance_log, best_individual, total_time, results_dir, population_size)
+            self.save_best_results(best_individual)
+            self.save_performance_report(performance_log, best_individual, total_time, population_size)
             
         # Cache statistics
         print(f"\nCache statistics: {cache_hits} hits, {cache_misses} misses")
         if cache_hits + cache_misses > 0:
             hit_rate = cache_hits / (cache_hits + cache_misses) * 100
             print(f"Cache hit rate: {hit_rate:.2f}%")
-            
+
         bestResult = None
         bestResult = self.getBestResult(best_individual)
 
         return best_individual, best_fitness, fitness_history, bestResult
         
-    def save_performance_report(self, performance_log, best_individual, total_time, results_dir, population_size):
+    def save_performance_report(self, performance_log, best_individual, total_time, population_size):
         """
         Save a detailed performance report of the genetic algorithm run.
         
@@ -253,8 +303,8 @@ class GeneticProblem:
             results_dir: Directory to save the report
         """
         # Create report filename with timestamp
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_filename = os.path.join(results_dir, f"performance_report_{timestamp}.txt")
+        timestamp = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+        report_filename = os.path.join(self.results_dir, f"performance_report_{timestamp}.txt")
         
         with open(report_filename, 'w') as f:
             # Write header
@@ -284,14 +334,17 @@ class GeneticProblem:
             f.write(f"Found in Generation: {next(i+1 for i, entry in enumerate(performance_log) if entry['best_fitness'] == max(e['best_fitness'] for e in performance_log))}\n")
             f.write(f"Best Chromosome:\n{self._format_individual(best_individual)}\n\n")
             
-            # Write generation statistics
+            # Write generation statistics with stagnation info
             f.write("GENERATION STATISTICS\n")
-            f.write("-" * 80 + "\n")
-            f.write("Gen | Best Fitness | Avg Fitness | Min Fitness | Time (s)\n")
-            f.write("-" * 80 + "\n")
+            f.write("-" * 110 + "\n")
+            f.write("Gen | Best Fitness | Avg Fitness | Min Fitness | Stagnation | Mutation Rate | Adapted | Time (s)\n")
+            f.write("-" * 110 + "\n")
             
             for entry in performance_log:
-                f.write(f"{entry['generation']:3d} | {entry['best_fitness']:12.6f} | {entry['avg_fitness']:11.6f} | {entry['min_fitness']:11.6f} | {entry['time_seconds']:8.2f}\n")
+                mutation_adapted = "Yes" if entry.get('mutation_adapted', False) else "No"
+                f.write(f"{entry['generation']:3d} | {entry['best_fitness']:12.6f} | {entry['avg_fitness']:11.6f} | "
+                    f"{entry['min_fitness']:11.6f} | {entry.get('stagnation_count', 0):10d} | "
+                    f"{entry.get('current_mutation_rate', 0.0):12.6f} | {mutation_adapted:7s} | {entry['time_seconds']:8.2f}\n")
             
             # Write cache statistics
             last_entry = performance_log[-1]
@@ -378,7 +431,7 @@ class GeneticProblem:
         # Ensure population size remains constant
         return new_population[:population_size]
     
-    def save_generation_results(self, best_individual, generation, results_dir):
+    def save_generation_results(self, best_individual, generation):
         """
         Save the best individual and its fitness for this generation.
         Override in subclasses if needed.
@@ -386,7 +439,7 @@ class GeneticProblem:
         """
         pass
     
-    def save_best_results(self, best_individual, results_dir):
+    def save_best_results(self, best_individual):
         """
         Save the best results. Override in subclasses if needed.
         Default implementation does nothing.
