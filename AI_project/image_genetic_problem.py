@@ -183,7 +183,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             save_image(final_image, image_filename)
             
             # Show the final result
-            display_image_with_palette(final_image, best_palette, "Best Overall Palette")
+            display_image_with_palette_comparison(self.image, final_image, best_palette, "Best Overall Palette")
             
             print("Saved overall best results")
         except Exception as e:
@@ -216,8 +216,8 @@ if __name__ == "__main__":
     generations = 40
     
     # Create results directory based on image name
-    # This will create a directory named "tests/squareFour" in the same directory as the image
-    results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0])
+    # This will create a directory named "tests/imageName/unrestricted" in the same directory as the image
+    results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "unrestricted")
 
     # Create and run the genetic algorithm
     problem = ImagePaletteGeneticProblem(image_path, num_colors, kMeans=False)
