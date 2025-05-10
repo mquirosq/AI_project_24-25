@@ -1286,10 +1286,6 @@ def run_caching_comparison_multiple_colors(image_name='squareSix.jpg'):
         speedup = no_caching_avg_time / caching_avg_time if caching_avg_time > 0 else 0
         print(f"\nSpeed improvement with caching: {speedup:.2f}x")
         
-        # For each color count, save the best results as images
-        color_dir = os.path.join(output_dir, f"colors_{num_colors}")
-        os.makedirs(color_dir, exist_ok=True)
-
     # Generate comparison visualizations across all color counts
     generate_color_comparison_visualizations(all_results, color_counts, output_dir)
     
