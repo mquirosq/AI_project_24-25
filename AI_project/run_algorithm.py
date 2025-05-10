@@ -5,9 +5,9 @@ from helper import (
     plot_fitness_evolution
 )
 
-def run_image_quantization(image_name, num_colors=10, restricted=False, population_size=20, generations=50, mutation_rate=0.2, crossover_rate=0.8, elitism=2, selection_method='tournament', adaptation_rate=1.2, adaptation_threshold=10, halting_stagnation_threshold=20,  kMeans=False, mutate_diverse=False, crossover_method='one_point', save_results=True, display=True, rgb_distance=False):
+def run_image_quantization(image_name, num_colors=10, restricted=False, population_size=20, generations=50, mutation_rate=0.2, crossover_rate=0.8, elitism=2, selection_method='tournament', tournament_size=3, adaptation_rate=1.2, adaptation_threshold=10, halting_stagnation_threshold=20,  kMeans=False, mutate_diverse=False, crossover_method='one_point', save_results=True, display=True, rgb_distance=False, use_caching=True):
     """
-    Run the genetic algorithm for image quantization with restricted colors.
+    Run the genetic algorithm for image quantization.
 
     Args:
         image_name (str): Name of the image file to process, must include the file extension (e.g., 'image.jpg') and be in the images folder.
@@ -19,15 +19,17 @@ def run_image_quantization(image_name, num_colors=10, restricted=False, populati
         crossover_rate (float): Probability of crossover between two parents.
         elitism (int): Number of best individuals to carry over to the next generation.
         selection_method (str): Selection method to use ('roulette', 'tournament', 'rank').
+        tournament_size (int): Size of the tournament for tournament selection.
         adaptation_rate (float): Rate of adaptation for the genetic algorithm (if 1, no adaptation).
         adaptation_threshold (int): Threshold for adaptation.
-        halting_stagnation_threshold (int): Threshold for halting stagnation.
+        halting_stagnation_threshold (int): Threshold for halting due to stagnation.
         kMeans (bool): Whether to include a KMeans created example for initial population generation.
         mutate_diverse (bool): Whether to use diverse mutation or swapping mutation.
         crossover_method (str): Method of crossover to use ('one_point', 'uniform', 'closest_pairs').
         save_results (bool): Whether to save the results of the genetic algorithm.
         display (bool): Whether to display the results.
         rgb_distance (bool): Whether to use RGB distance for fitness calculation. It is recommended to use LAB color space for better results. If active,the algorithm will run in the unrestricted version.
+        use_caching (bool): Whether to use caching for the image processing. If True, the image will be cached to avoid reprocessing.
 
     Returns:
             best_palette (list): The best palette found by the genetic algorithm.
@@ -42,11 +44,11 @@ def run_image_quantization(image_name, num_colors=10, restricted=False, populati
 
     # Create and run the genetic algorithm
     if rgb_distance:
-        problem = ImagePaletteGeneticProblemRGBDistance(image_path, num_colors, kMeans=kMeans, mutate_diverse=mutate_diverse, crossover_method=crossover_method, save_results=save_results, display=display)
+        problem = ImagePaletteGeneticProblemRGBDistance(image_path, num_colors, kMeans=kMeans, mutate_diverse=mutate_diverse, crossover_method=crossover_method, save_results=save_results, display=display, use_caching=use_caching)
     elif not restricted:
-        problem = ImagePaletteGeneticProblem(image_path, num_colors, kMeans=kMeans, mutate_diverse=mutate_diverse, crossover_method=crossover_method, save_results=save_results, display=display)
+        problem = ImagePaletteGeneticProblem(image_path, num_colors, kMeans=kMeans, mutate_diverse=mutate_diverse, crossover_method=crossover_method, save_results=save_results, display=display, use_caching=use_caching)
     else:
-        problem = ImagePaletteGeneticProblemRestricted(image_path, num_colors, kMeans=kMeans, mutate_diverse=mutate_diverse, crossover_method=crossover_method, save_results=save_results, display=display)
+        problem = ImagePaletteGeneticProblemRestricted(image_path, num_colors, kMeans=kMeans, mutate_diverse=mutate_diverse, crossover_method=crossover_method, save_results=save_results, display=display, use_caching=use_caching)
     
     best_palette, best_fitness, fitness_history, bestImage, kMeans_palette, kMeans_image = problem.run(
         population_size=population_size,
@@ -55,6 +57,7 @@ def run_image_quantization(image_name, num_colors=10, restricted=False, populati
         crossover_rate=crossover_rate,
         elitism=elitism,
         selection_method=selection_method,
+        tournament_size=tournament_size,
         save_results=save_results,
         adaptation_rate=adaptation_rate,
         adaptation_threshold=adaptation_threshold, 
@@ -65,7 +68,6 @@ def run_image_quantization(image_name, num_colors=10, restricted=False, populati
     print(f"Best palette: {best_palette}")
     print(f"Best palette fitness: {best_fitness:.6f}")
 
-    # Plot fitness evolution
     plot_fitness_evolution(fitness_history, save_path = problem.results_dir, display=display)
 
     return best_palette, best_fitness, fitness_history, bestImage, kMeans_palette, kMeans_image
@@ -80,6 +82,7 @@ if __name__ == "__main__":
     generations = 50 # Number of generations to run the genetic algorithm
     
     selection_method = 'tournament' # Selection method to use ('roulette', 'tournament', 'rank')
+    tournament_size = 3 # Size of the tournament for tournament selection
     mutate_diverse = True # Whether to use diverse mutation or swapping mutation
     crossover_method = 'closest_pairs' # Method of crossover to use ('one_point', 'uniform', 'closest_pairs')
 
@@ -89,11 +92,11 @@ if __name__ == "__main__":
 
     adaptation_rate = 1.2 # Rate of adaptation for the genetic algorithm (if 1, no adaptation)
     adaptation_threshold = 10 # Threshold for adaptation
-    halting_stagnation_threshold = 20 # Threshold for halting stagnation
+    halting_stagnation_threshold = 20 # Threshold for halting due to stagnation
     
     kMeans = False # Whether to include a KMeans created example for initial population generation
 
     save_results = True # Whether to save the results of the genetic algorithm
     display = True # Whether to display the results
 
-    run_image_quantization(image_name, num_colors, restricted, population_size, generations, mutation_rate, crossover_rate, elitism, selection_method, adaptation_rate, adaptation_threshold, halting_stagnation_threshold, kMeans, mutate_diverse, crossover_method, save_results, display)
+    run_image_quantization(image_name, num_colors, restricted, population_size, generations, mutation_rate, crossover_rate, elitism, selection_method, tournament_size, adaptation_rate=adaptation_rate, adaptation_threshold=adaptation_threshold, halting_stagnation_threshold=halting_stagnation_threshold, kMeans=kMeans, mutate_diverse=mutate_diverse, crossover_method=crossover_method, save_results=save_results, display=display)

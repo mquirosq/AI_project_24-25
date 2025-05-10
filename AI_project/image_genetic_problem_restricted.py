@@ -7,65 +7,78 @@ import numpy as np
 import random
 import cv2
 
-# Restricts the colors on the palette to be in the original image
-
 class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
     """
-    Genetic algorithm for finding an optimal color palette for an image where the colors must be part of the image.
+    Genetic algorithm for finding an optimal color palette for an image where the colors must exist in the originalimage.
     """
     
-    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False, crossover_method='one-point', save_results=True, display=True):
+    def __init__(self, image_path, num_colors=5, kMeans=False, mutate_diverse=False, crossover_method='one-point', save_results=True, display=True, use_caching=True):
         """
         Initialize the problem with an image and palette size.
         
         Args:
             image_path: Path to the image file
             num_colors: Number of colors in each palette
-            cache_size: Maximum size of fitness cache
             kMeans: Whether to use KMeans for initial palette generation
+            mutate_diverse: Whether to use diverse mutation
+            crossover_method: Method for crossover ('one-point', 'two-point', 'uniform')
+            save_results: Whether to save results
+            display: Whether to display results
+            use_caching: Whether to use caching for results
         """
         if not hasattr(self, 'results_dir'):
             self.results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "restricted")
-        super().__init__(image_path, num_colors, cache_size, kMeans, mutate_diverse, crossover_method, save_results=save_results, display=display)
+            
+        super().__init__(image_path, num_colors, kMeans, mutate_diverse, crossover_method, save_results=save_results, display=display, use_caching=use_caching)
+
         self.colors = np.unique(self.image.reshape(-1, self.image.shape[2]), axis=0)
+        
     
     def generate_individual(self):
-        """Generate a random color palette.""" 
+        """
+        Generate a random color palette with the colors in the original image.
+        
+        Returns:
+            A random color palette with the specified number of colors from the original image.
+        """ 
         return generate_random_palette_with_colors(self.num_colors, self.colors)
     
-    def compute_fitness(self, individual):
-        """
-        Calculate fitness of a palette based on how well it represents the image.
-        Lower distance means higher fitness.
-        """
-        # Penalize for repeated colors in the palette
-        distance = 0.1 * (self.num_colors - len(np.unique(individual, axis=0)))
-        return super().compute_fitness(individual) - distance
-    
-    def mutate(self, individual, mutation_rate):
+    def mutate_random(self, individual):
         """
         Mutate a palette by replacing some colors with random ones from the original image palette.
+
+        Args:
+            individual: A color palette (array of RGB colors).
+        Returns:
+            The given palette individual mutated.
         """
-        individual = np.array(individual)  # Ensure it's a numpy array
-        
+
         for i in range(len(individual)):
-            if random.random() < mutation_rate:
-                # Replace with a random color
+            if random.random() < self.mutation_rate:
                 individual[i] = random.choice(self.colors)
+        
         return individual
     
-    def mutate_diverse(self, individual, mutation_rate):
+    def mutate_diverse(self, individual):
         """
-        Mutate a palette by replacing the closest two colors with random ones from the original image palette.
+        Mutate a palette by replacing the closest two colors with random ones from the palette of the original image.
+        This method uses LAB color space to compute the distance between colors.
+
+        Args:
+            individual: A color palette (array of RGB colors).
+        Returns:
+            The given palette individual mutated.
         """
+
         # Get the two closest colors in the palette using LAB color space
         individual_lab = cv2.cvtColor(individual.reshape(1, -1, 3), cv2.COLOR_RGB2LAB)[0]
         distances = np.linalg.norm(individual_lab[:, np.newaxis] - individual_lab, axis=2)
         np.fill_diagonal(distances, np.inf)
         closest_indices = np.unravel_index(np.argmin(distances), distances.shape)
+        
         # Mutate the closest colors with a certain probability
         for i in closest_indices:
-            if random.random() < mutation_rate:
+            if random.random() < self.mutation_rate:
                 individual[i] = random.choice(self.colors)
 
         return individual
@@ -73,31 +86,32 @@ class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
 
 # Usage example
 if __name__ == "__main__":
+    
     # Example configuration
     image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "squareFour.jpg")
-    num_colors = 10
+    num_colors = 16
     population_size = 20
-    generations = 3
+    generations = 40
 
     # Create and run the genetic algorithm
-    problem = ImagePaletteGeneticProblemRestricted(image_path, num_colors, kMeans=False, mutate_diverse=True, crossover_method='closest_pairs', )
+    problem = ImagePaletteGeneticProblemRestricted(image_path, num_colors, kMeans=False, mutate_diverse=True, crossover_method='closest_pairs', save_results=True, display=True, use_caching=True)
     
-    best_palette, best_fitness, fitness_history, bestImage = problem.run(
+    best_palette, best_fitness, fitness_history, bestImage, _, _ = problem.run(
         population_size=population_size,
         generations=generations,
         mutation_rate=0.2,
         crossover_rate=0.8,
         elitism=2,
         selection_method='tournament',
+        tournament_size=3,
         save_results=True,
-        adaptation_rate=1.2,
-        adaptation_threshold=10, 
-        halting_stagnation_threshold=20
+        adaptation_rate=1,
+        adaptation_threshold=10,
+        halting_stagnation_threshold=None
     )
     
     print("\nGenetic algorithm completed.")
     print(f"Best palette: {best_palette}")
     print(f"Best palette fitness: {best_fitness:.6f}")
     
-    # Plot fitness evolution
     plot_fitness_evolution(fitness_history, save_path = problem.results_dir)
