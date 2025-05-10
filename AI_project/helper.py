@@ -322,7 +322,7 @@ def save_image_with_palette(image, palette, filename="image_with_palette.png"):
     fig.savefig(filename, bbox_inches='tight', dpi=300)
     plt.close(fig)
 
-def plot_fitness_evolution(fitness_history, save_path=None):
+def plot_fitness_evolution(fitness_history, save_path=None, display=True):
     """
     Plot the evolution of fitness over generations.
     
@@ -342,4 +342,7 @@ def plot_fitness_evolution(fitness_history, save_path=None):
         plt.savefig(save_path + "/fitness_history.png", bbox_inches='tight', dpi=300)
         print(f"Plot saved to {save_path}")
     
-    plt.show()
+    if display:
+        plt.show()
+    else:
+        plt.close()

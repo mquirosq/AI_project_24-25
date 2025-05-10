@@ -14,7 +14,7 @@ class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
     Genetic algorithm for finding an optimal color palette for an image where the colors must be part of the image.
     """
     
-    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False, crossover_method='one-point', save_results=True):
+    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False, crossover_method='one-point', save_results=True, display=True):
         """
         Initialize the problem with an image and palette size.
         
@@ -26,7 +26,7 @@ class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
         """
         if not hasattr(self, 'results_dir'):
             self.results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "restricted")
-        super().__init__(image_path, num_colors, cache_size, kMeans, mutate_diverse, crossover_method, save_results=save_results)
+        super().__init__(image_path, num_colors, cache_size, kMeans, mutate_diverse, crossover_method, save_results=save_results, display=display)
         self.colors = np.unique(self.image.reshape(-1, self.image.shape[2]), axis=0)
     
     def generate_individual(self):

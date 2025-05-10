@@ -17,7 +17,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
     Genetic algorithm for finding an optimal color palette for an image.
     """
     
-    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False, crossover_method='uniform', save_results=True):
+    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False, crossover_method='uniform', save_results=True, display=True):
         """
         Initialize the problem with an image and palette size.
         
@@ -34,15 +34,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         if self.image is None:
             raise ValueError(f"Failed to load image from {image_path}")
         
-        if kMeans:
-            palette = compute_palette_kmeans(self.image, num_colors)
-            kmeans_image = convert_image_to_palette(self.image, palette)
-            save_image_with_palette(kmeans_image, palette, os.path.join(self.results_dir, "kmeans_image.png"))
-            display_image_with_palette_comparison(self.image, kmeans_image, palette, "Initial kMeans Palette")
-
-            print(f"Population size: {population_size}, Colors per palette: {num_colors}, Generations: {generations}")
-            print(f"KMeans fitness: {self.compute_fitness(palette)}")
-            
+        self.display = display
         self.image_path = image_path
         self.num_colors = num_colors
         self._image_name = os.path.basename(image_path)
@@ -50,26 +42,11 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         self.cache_size = cache_size
         self.use_mutate_diverse = mutate_diverse
         self.crossover_method = crossover_method
+            
     
     def generate_individual(self):
         """Generate a random color palette."""
         return generate_random_palette(self.num_colors)
-    
-    def compute_fitness_rgb(self, individual):
-        """
-        Calculate fitness of a palette based on how well it represents the image.
-        Lower distance means higher fitness.
-        """
-        # Convert the image using the palette
-        converted_image = convert_image_to_palette(self.image, individual)
-        
-        # Calculate distance between original and converted image
-        distance = euclidean_distance(self.image, converted_image)
-        
-        # Convert distance to fitness (lower distance = higher fitness)
-        fitness = - distance
-        
-        return fitness
     
     def compute_fitness(self, individual):
         """
@@ -234,7 +211,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             save_image_with_palette(final_image, best_palette, image_filename)
             
             # Show the final result
-            display_image_with_palette_comparison(self.image, final_image, best_palette, "Best Overall Palette", self.results_dir + "/final_comparison.png")
+            if self.display: display_image_with_palette_comparison(self.image, final_image, best_palette, "Best Overall Palette", self.results_dir + "/final_comparison.png")
             
             print("Saved overall best results")
         except Exception as e:
@@ -341,6 +318,40 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         
         print(f"Performance report saved to {report_filename}")
 
+    def run(self, population_size, generations, mutation_rate=0.1, 
+            crossover_rate=0.8, elitism=2, selection_method='roulette',
+            save_results=False, adaptation_rate=1, 
+            adaptation_threshold=10, halting_stagnation_threshold=None):
+        """
+        Run the genetic algorithm for a specified number of generations.
+        """
+        palette = None
+        kmeans_image = None
+        if self.kMeans:
+            palette = compute_palette_kmeans(self.image, self.num_colors)
+            kmeans_image = convert_image_to_palette(self.image, palette)
+            save_image_with_palette(kmeans_image, palette, os.path.join(self.results_dir, "kmeans_image.png"))
+            if self.display: display_image_with_palette_comparison(self.image, kmeans_image, palette, "Initial kMeans Palette")
+
+            print(f"KMeans fitness: {self.compute_fitness(palette)}")
+        
+        parent_results = super().run(
+            population_size=population_size,
+            generations=generations,
+            mutation_rate=mutation_rate,
+            crossover_rate=crossover_rate,
+            elitism=elitism,
+            selection_method=selection_method,
+            adaptation_rate=adaptation_rate,
+            adaptation_threshold=adaptation_threshold,
+            halting_stagnation_threshold=halting_stagnation_threshold,
+            save_results=save_results
+        )
+        best_palette, best_fitness, fitness_history, best_image = parent_results
+    
+        return best_palette, best_fitness, fitness_history, best_image, palette, kmeans_image
+        
+
     def _format_individual(self, individual):
         """Format an individual for readable output in the report."""
         if isinstance(individual, np.ndarray):
@@ -349,6 +360,46 @@ class ImagePaletteGeneticProblem(GeneticProblem):
                             for i, c in enumerate(individual)])
             return str(individual)
         return str(individual)
+    
+class ImagePaletteGeneticProblemRGBDistance(ImagePaletteGeneticProblem):
+    """
+    Genetic algorithm for finding an optimal color palette for an image using RGB distance.
+    This class has been created to ilustrate the problem of computing the distance in RGB space 
+    and justify the use of lab color space for distance computations.
+    """
+
+    def __init__(self, image_path, num_colors=5, cache_size=1000, kMeans=False, mutate_diverse=False, crossover_method='uniform', save_results=True, display=True):
+        """
+        Initialize the problem with an image and palette size.
+        
+        Args:
+            image_path: Path to the image file
+            num_colors: Number of colors in each palette
+            cache_size: Maximum size of fitness cache
+        """
+        if not hasattr(self, 'results_dir'):
+            self.results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "unrestricted_rgb_distance")
+        super().__init__(image_path, num_colors, cache_size, kMeans, mutate_diverse, crossover_method, save_results, display)
+    
+    def compute_fitness(self, individual):
+        """
+        Calculate fitness of a palette based on how well it represents the image.
+        Lower distance means higher fitness. This method used eculidean distance in RGB space.
+        Add a penalty for repeated colors in the palette, as they should be minimized.
+        """
+        # Convert the image using the palette
+        converted_image = convert_image_to_palette(self.image, individual)
+        
+        # Calculate distance between original and converted image
+        distance = euclidean_distance(self.image, converted_image)
+        
+        # Convert distance to fitness (lower distance = higher fitness)
+        fitness = 1 / (1 + distance)
+        # Add a penalty for repeated colors in the palette
+        unique_colors = np.unique(individual, axis=0)
+        penalty = 1 - (len(unique_colors) / self.num_colors)
+        
+        return fitness - penalty
 
 # Usage example
 if __name__ == "__main__":

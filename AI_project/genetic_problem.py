@@ -270,18 +270,19 @@ class GeneticProblem:
                 self.save_generation_results(gen_best_individual, generation)
             
             # Create next generation
-            if generation < generations - 1 and (halting_stagnation_threshold == None or halting_stagnation_threshold > stagnation_count):
-                population = self.evolve_population(
-                    population, 
-                    fitness_scores, 
-                    elitism=elitism, 
-                    crossover_rate=crossover_rate, 
-                    mutation_rate=current_mutation_rate,
-                    selection_method=selection_method
-                )
-            else:
-                print("Halting evolution due to stagnation.")
-                break
+            if generation < generations - 1:
+                if halting_stagnation_threshold == None or halting_stagnation_threshold > stagnation_count:
+                    population = self.evolve_population(
+                        population, 
+                        fitness_scores, 
+                        elitism=elitism, 
+                        crossover_rate=crossover_rate, 
+                        mutation_rate=current_mutation_rate,
+                        selection_method=selection_method
+                    )
+                else: 
+                    print("Halting evolution due to stagnation.")
+                    break
 
         # Calculate total execution time
         total_time = time.time() - start_time
