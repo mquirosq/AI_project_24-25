@@ -1,14 +1,12 @@
 import os
 import re
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
 import argparse
 from run_algorithm import run_image_quantization
-from PIL import Image
-import numpy as np
 import matplotlib.pyplot as plt
+from helper import (save_image, load_image)
     
 
 """
@@ -16,43 +14,105 @@ Configuration for image quantization experiments
 """
 
 # Parameter configurations to test
-CONFIGURATIONS = [
-    # Baseline configuration
-    {
-        'name': 'baseline-unrestricted',
-        'num_colors': 8,
+CACHING_TEST_CONFIGS = [
+        {
+        'name': 'caching_enabled',
+        'num_colors': 6,
         'restricted': False,
         'population_size': 20,
-        'generations': 30,
+        'generations': 100,
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
-        'selection_method': 'tournament',
-        'adaptation_rate': 1,
-        'adaptation_threshold': None,
+        'elitism': 2,
         'halting_stagnation_threshold': None,
+        'adaptation_rate': 1,
+        'adaptation_threshold': 10,
         'kMeans': False,
+        'selection_method': 'tournament',
+        'tournament_size': 3,
         'mutate_diverse': False,
         'crossover_method': 'one_point',
+        'use_caching': True,  # With caching
         'display': False
     },
-    # Enhanced selection method
     {
-        'name': 'rank_selection',
-        'num_colors': 8,
+        'name': 'caching_disabled',
+        'num_colors': 6,
         'restricted': False,
-        'population_size': 30,
-        'generations': 30,
+        'population_size': 20,
+        'generations': 100,
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
-        'selection_method': 'rank',  # Changed from baseline
-        'adaptation_rate': 1.2,
+        'elitism': 2,
+        'halting_stagnation_threshold': None,
+        'adaptation_rate': 1,
         'adaptation_threshold': 10,
-        'halting_stagnation_threshold': 20,
         'kMeans': False,
+        'selection_method': 'tournament',
+        'tournament_size': 3,
         'mutate_diverse': False,
         'crossover_method': 'one_point',
+        'use_caching': False,  # Without caching
+        'display': False
+    }
+]
+
+CONFIGURATIONS = [
+    # Basic configuration
+    {
+        'name': 'basic',
+        'num_colors': 6,
+        
+        'restricted': False,
+        
+        'population_size': 20,
+        'generations': 100,
+        'mutation_rate': 0.2,
+        'crossover_rate': 0.8,
+        'elitism': 2,
+        'halting_stagnation_threshold': 20,
+
+        'adaptation_rate': 1.1,
+        'adaptation_threshold': 10,
+
+        'kMeans': False,
+
+        'selection_method': 'tournament',
+        'tournament_size': 3,
+        'mutate_diverse': False,
+        'crossover_method': 'one_point',
+        
+        'use_caching': False,
         'display': False
     },
+    # Basic caching
+    {
+        'name': 'basic',
+        'num_colors': 6,
+        
+        'restricted': False,
+        
+        'population_size': 20,
+        'generations': 100,
+        'mutation_rate': 0.2,
+        'crossover_rate': 0.8,
+        'elitism': 2,
+        'halting_stagnation_threshold': 20,
+
+        'adaptation_rate': 1.1,
+        'adaptation_threshold': 10,
+
+        'kMeans': False,
+
+        'selection_method': 'tournament',
+        'tournament_size': 3,
+        'mutate_diverse': False,
+        'crossover_method': 'one_point',
+        
+        'use_caching': True,
+        'display': False
+    },
+
     # High mutation rate
     {
         'name': 'high_mutation',
@@ -63,6 +123,7 @@ CONFIGURATIONS = [
         'mutation_rate': 0.4,  # Changed from baseline
         'crossover_rate': 0.8,
         'selection_method': 'tournament',
+        'tournament_size': 3,
         'adaptation_rate': 1.2,
         'adaptation_threshold': 10,
         'halting_stagnation_threshold': 20,
@@ -81,6 +142,7 @@ CONFIGURATIONS = [
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
         'selection_method': 'tournament',
+        'tournament_size': 3,
         'adaptation_rate': 1.2,
         'adaptation_threshold': 10,
         'halting_stagnation_threshold': 20,
@@ -99,6 +161,7 @@ CONFIGURATIONS = [
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
         'selection_method': 'tournament',
+        'tournament_size': 3,
         'adaptation_rate': 1.2,
         'adaptation_threshold': 10,
         'halting_stagnation_threshold': 20,
@@ -117,6 +180,7 @@ CONFIGURATIONS = [
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
         'selection_method': 'tournament',
+        'tournament_size': 3,
         'adaptation_rate': 1.2,
         'adaptation_threshold': 10,
         'halting_stagnation_threshold': 20,
@@ -135,6 +199,7 @@ CONFIGURATIONS = [
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
         'selection_method': 'tournament',
+        'tournament_size': 3,
         'adaptation_rate': 1.2,
         'adaptation_threshold': 10,
         'halting_stagnation_threshold': 20,
@@ -153,6 +218,7 @@ CONFIGURATIONS = [
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
         'selection_method': 'tournament',
+        'tournament_size': 3,
         'adaptation_rate': 1.2,
         'adaptation_threshold': 10,
         'halting_stagnation_threshold': 20,
@@ -171,6 +237,7 @@ CONFIGURATIONS = [
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
         'selection_method': 'tournament',
+        'tournament_size': 3,
         'adaptation_rate': 1.2,
         'adaptation_threshold': 10,
         'halting_stagnation_threshold': 20,
@@ -183,16 +250,21 @@ CONFIGURATIONS = [
 
 # Number of repetitions for each configuration to get statistical significance
 REPETITIONS = 3
-
-# Color palette sizes to test
-COLOR_PALETTE_SIZES = [4, 16, 32]
+BASIC_COLOR_CHANGES = [4, 6, 10]
 
 """
 Experiment analyzer for image quantization genetic algorithm
 """
 
 def extract_data_from_performance_report(file_path):
-    """Extract key metrics from a performance report file"""
+    """
+    Extract key metrics from a performance report file
+    
+    Args:
+        file_path (str): Path to the performance report file
+    Returns:
+        dict: A dictionary containing the extracted metrics
+    """
     try:
         with open(file_path, 'r') as f:
             content = f.read()
@@ -314,13 +386,20 @@ def extract_data_from_performance_report(file_path):
         return None
 
 def find_performance_reports(base_dir=None):
-    """Find all performance report files"""
+    """
+    Find all performance report files
+    
+    Args:
+        base_dir (str): Base directory to search for report files
+    Returns:
+        list: List of paths to performance report files
+    """
+
     if base_dir is None:
         base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "tests")
     
-    # Look for performance report files recursively
     report_files = []
-    for root, dirs, files in os.walk(base_dir):
+    for root, _, files in os.walk(base_dir):
         for file in files:
             if file.startswith("performance_report_") and file.endswith(".txt"):
                 report_files.append(os.path.join(root, file))
@@ -329,16 +408,22 @@ def find_performance_reports(base_dir=None):
     return report_files
 
 def collect_and_analyze_reports(output_dir=None):
-    """Collect and analyze all performance reports"""
+    """
+    Collect and analyze all performance reports
+    
+    Args:
+        output_dir (str): Directory to save the analysis results
+    Returns:
+        pd.DataFrame: DataFrame containing the analysis results
+    """
     # Create output directory for analysis
     if output_dir is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_dir = os.path.join("analysis", f"report_analysis_{timestamp}")
     
     os.makedirs(output_dir, exist_ok=True)
     print(f"Analysis results will be saved to {output_dir}")
-    
-    # Find all report files
+
     report_files = find_performance_reports()
     
     if not report_files:
@@ -376,17 +461,24 @@ def collect_and_analyze_reports(output_dir=None):
         axis=1
     )
     
-    # Generate summary statistics
     generate_summary_statistics(df, output_dir)
     
-    # Generate visualizations
     generate_visualizations(df, output_dir)
     
     print(f"Analysis complete! Results saved to {output_dir}")
     return df
 
 def generate_summary_statistics(df, output_dir):
-    """Generate summary statistics from the performance data"""
+    """
+    Generate summary statistics from the performance data
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing performance data
+        output_dir (str): Directory to save the summary statistics
+    
+    Returns:
+        None. Saves summary statistics to CSV files.
+    """
     
     # 1. Summary by image
     image_summary = df.groupby('image_name').agg({
@@ -443,7 +535,6 @@ def generate_summary_statistics(df, output_dir):
         f.write("| Image | Runs | Avg Fitness | Std Dev | Min Fitness | Max Fitness | Avg Time | Avg Gen |\n")
         f.write("|-------|------|------------|---------|-------------|-------------|----------|--------|\n")
         
-        # Use .iterrows() instead of looking up by index
         for idx, row in image_summary.iterrows():
             f.write(f"| {idx} | {row[('best_fitness', 'count')]} | ")
             f.write(f"{row[('best_fitness', 'mean')]:.6f} | {row[('best_fitness', 'std')]:.6f} | ")
@@ -480,27 +571,26 @@ def generate_summary_statistics(df, output_dir):
             f.write(f"{row[('best_fitness', 'min')]:.6f} | {row[('best_fitness', 'max')]:.6f} | ")
             f.write(f"{row[('execution_time', 'mean')]:.2f}s | {row[('best_generation', 'mean')]:.1f} |\n")
         
-        # Find the best configuration - safer method
-        best_config_idx = None
+        # Find the best configuration
+        best_config_index = None
         best_fitness = -float('inf')
         
         for idx, row in config_summary.iterrows():
             if row[('best_fitness', 'mean')] > best_fitness:
                 best_fitness = row[('best_fitness', 'mean')]
-                best_config_idx = idx
+                best_config_index = idx
                 
-        if best_config_idx is not None:
-            best_config = config_summary.loc[best_config_idx]
+        if best_config_index is not None:
+            best_config = config_summary.loc[best_config_index]
             
             f.write("\n## Best Configuration\n\n")
-            f.write(f"**Configuration Group:** {best_config_idx}\n\n")
+            f.write(f"**Configuration Group:** {best_config_index}\n\n")
             f.write(f"- **Average Fitness:** {best_config[('best_fitness', 'mean')]:.6f}\n")
             f.write(f"- **Number of Runs:** {best_config[('best_fitness', 'count')]}\n")
             f.write(f"- **Average Execution Time:** {best_config[('execution_time', 'mean')]:.2f} seconds\n")
-            f.write(f"- **Average Best Generation:** {best_config[('best_generation', 'mean')]:.1f}\n\n")
             
             # Parse the configuration group
-            config_parts = best_config_idx.split('_')
+            config_parts = best_config_index.split('_')
             if len(config_parts) >= 8:
                 f.write("**Parameters:**\n\n")
                 f.write(f"- Selection Method: {config_parts[0]}\n")
@@ -513,11 +603,20 @@ def generate_summary_statistics(df, output_dir):
                 f.write(f"- Crossover Method: {config_parts[7]}\n")
 
 def generate_visualizations(df, output_dir):
-    """Generate visualizations from the performance data"""
+    """
+    Generate visualizations from the performance data
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing performance data
+        output_dir (str): Directory to save the visualizations
+        
+    Returns:
+        None. Saves visualizations as PNG files.
+    """
+
     vis_dir = os.path.join(output_dir, "visualizations")
     os.makedirs(vis_dir, exist_ok=True)
     
-    # Set the style for plots
     sns.set_theme(style="whitegrid")
     
     # Only generate visualizations if we have enough unique values
@@ -663,9 +762,8 @@ def generate_visualizations(df, output_dir):
     
     # 10. Convergence Analysis (for selection methods)
     try:
-        # Only attempt if we have fitness history data
         if 'fitness_history' in df.columns and any(len(history) > 0 for history in df['fitness_history'] if history is not None):
-            # Filter for unique selection methods
+            
             selection_methods = df['selection_method'].unique()
             plt.figure(figsize=(12, 8))
             
@@ -695,13 +793,29 @@ def generate_visualizations(df, output_dir):
             plt.tight_layout()
             plt.savefig(os.path.join(vis_dir, "convergence_by_selection.png"), dpi=300)
             plt.close()
+    
     except Exception as e:
         print(f"Error generating convergence plot: {str(e)}")
 
 def generate_latex_tables(df, output_dir):
-    """Generate LaTeX tables for the paper"""
+    """
+    Generate LaTeX tables for the paper
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing performance data
+        output_dir (str): Directory to save the LaTeX tables
+    Returns:
+        None. Saves LaTeX tables in the specified directory.
+    """
+    
+    if output_dir is None:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_dir = os.path.join("analysis", f"latex_tables_{timestamp}")
+    
     latex_dir = os.path.join(output_dir, "latex")
     os.makedirs(latex_dir, exist_ok=True)
+    
+    print(f"Generating LaTeX tables in: {latex_dir}")
     
     # 1. Summary by selection method
     selection_summary = df.groupby('selection_method').agg({
@@ -724,8 +838,8 @@ def generate_latex_tables(df, output_dir):
             f.write(f"{row[('best_fitness', 'count')]} & ")
             f.write(f"{row[('best_fitness', 'mean')]:.6f} & ")
             f.write(f"{row[('best_fitness', 'std')]:.6f} & ")
-            f.write(f"{row['execution_time']:.2f} & ")
-            f.write(f"{row['best_generation']:.1f} \\\\\n")
+            f.write(f"{row[('execution_time', 'mean')]:.2f} & ")
+            f.write(f"{row[('best_generation', 'mean')]:.1f} \\\\\n")
         
         f.write("\\hline\n")
         f.write("\\end{tabular}\n")
@@ -752,8 +866,8 @@ def generate_latex_tables(df, output_dir):
             f.write(f"{row[('best_fitness', 'count')]} & ")
             f.write(f"{row[('best_fitness', 'mean')]:.6f} & ")
             f.write(f"{row[('best_fitness', 'std')]:.6f} & ")
-            f.write(f"{row['execution_time']:.2f} & ")
-            f.write(f"{row['best_generation']:.1f} \\\\\n")
+            f.write(f"{row[('execution_time', 'mean')]:.2f} & ")
+            f.write(f"{row[('best_generation', 'mean')]:.1f} \\\\\n")
         
         f.write("\\hline\n")
         f.write("\\end{tabular}\n")
@@ -761,22 +875,18 @@ def generate_latex_tables(df, output_dir):
     
     # 3. Feature comparison (KMeans, Restricted, Diverse Mutation)
     try:
-        # Only create table if we have data for all features
         if (df['uses_kmeans'].nunique() > 1 and 
             df['restricted'].nunique() > 1 and 
             df['uses_diverse_mutation'].nunique() > 1):
             
-            # KMeans comparison
             kmeans_summary = df.groupby('uses_kmeans').agg({
                 'best_fitness': ['mean', 'std']
             })
             
-            # Restricted comparison
             restricted_summary = df.groupby('restricted').agg({
                 'best_fitness': ['mean', 'std']
             })
             
-            # Diverse Mutation comparison
             diverse_summary = df.groupby('uses_diverse_mutation').agg({
                 'best_fitness': ['mean', 'std']
             })
@@ -794,21 +904,18 @@ def generate_latex_tables(df, output_dir):
                 for i in [False, True]:  # No/Yes
                     f.write(f"{'Yes' if i else 'No'} & ")
                     
-                    # KMeans values
                     if i in kmeans_summary.index:
                         f.write(f"{kmeans_summary.loc[i][('best_fitness', 'mean')]:.6f} & ")
                         f.write(f"{kmeans_summary.loc[i][('best_fitness', 'std')]:.6f} & ")
                     else:
                         f.write("N/A & N/A & ")
                         
-                    # Restricted values
                     if i in restricted_summary.index:
                         f.write(f"{restricted_summary.loc[i][('best_fitness', 'mean')]:.6f} & ")
                         f.write(f"{restricted_summary.loc[i][('best_fitness', 'std')]:.6f} & ")
                     else:
                         f.write("N/A & N/A & ")
                         
-                    # Diverse mutation values
                     if i in diverse_summary.index:
                         f.write(f"{diverse_summary.loc[i][('best_fitness', 'mean')]:.6f} & ")
                         f.write(f"{diverse_summary.loc[i][('best_fitness', 'std')]:.6f} \\\\\n")
@@ -821,14 +928,23 @@ def generate_latex_tables(df, output_dir):
     except Exception as e:
         print(f"Error generating feature comparison table: {str(e)}")
 
-def run_configuration_test(config, image_name='squareFour.jpg'):
-    """Run a single configuration test"""
+def run_configuration_test(config, image_name='squareSix.jpg'):
+    """
+    Run a single configuration test
+    This function runs the image quantization algorithm with the provided configuration.
+
+    Args:
+        config (dict): Configuration parameters for the test
+        image_name (str): Name of the image to be processed
+    Returns:
+        best_fitness (float): Best fitness value obtained
+        fitness_history (list): History of fitness values during the run
+    """
 
     print(f"Running test with configuration: {config['name']}")
     print(f"Parameters: {config}")
     
-    # Run the algorithm with this configuration
-    _, best_fitness, fitness_history, _, _, kMeans_image = run_image_quantization(
+    _, best_fitness, fitness_history, _, _, _ = run_image_quantization(
         image_name=image_name,
         **{k: v for k, v in config.items() if k != 'name'}
     )
@@ -836,7 +952,7 @@ def run_configuration_test(config, image_name='squareFour.jpg'):
     print(f"Test completed. Best fitness: {best_fitness}")
     return best_fitness, fitness_history
 
-def run_batch_test(configurations=None, image_name='squareFour.jpg'):
+def run_batch_test(configurations=None, image_name='squareSix.jpg'):
     """Run tests for all configurations and collect results"""
     if configurations is None:
         configurations = CONFIGURATIONS
@@ -864,7 +980,14 @@ def generate_rgb_distance_comparison(output_dir=None):
     """
     Generate visual comparison between RGB distance and perceptual metrics.
     Shows original image, kmeans initialization, and final results side by side.
+
+    Args:
+        output_dir (str): Directory to save the results. If None, a timestamped directory will be created.
+
+    Returns:
+        None. Saves images and analysis results to the specified directory.
     """
+
     if output_dir is None:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_dir = os.path.join("analysis", f"rgb_distance_comparison_{timestamp}")
@@ -875,9 +998,9 @@ def generate_rgb_distance_comparison(output_dir=None):
     os.makedirs(aux_output_dir, exist_ok=True)
     print(f"RGB distance comparison results will be saved to {output_dir}")
 
-    test_image = 'squareFour.jpg'  # Image with clear color differences
+    test_image = 'squareFour.jpg'
     
-    # Define configurations: one with RGB distance and one with perceptual distance
+    # Define configurations:
     rgb_config = {
         'name': 'rgb-distance',
         'num_colors': 4,
@@ -887,6 +1010,7 @@ def generate_rgb_distance_comparison(output_dir=None):
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
         'selection_method': 'tournament',
+        'tournament_size': 3,
         'adaptation_rate': 1,
         'adaptation_threshold': None,
         'halting_stagnation_threshold': None,
@@ -898,6 +1022,7 @@ def generate_rgb_distance_comparison(output_dir=None):
         'rgb_distance': True
     }
     
+    # Lab color space configuration
     perceptual_config = {
         'name': 'perceptual-distance',
         'num_colors': 4,
@@ -907,6 +1032,7 @@ def generate_rgb_distance_comparison(output_dir=None):
         'mutation_rate': 0.2,
         'crossover_rate': 0.8,
         'selection_method': 'tournament',
+        'tournament_size': 3,
         'adaptation_rate': 1,
         'adaptation_threshold': None,
         'halting_stagnation_threshold': None,
@@ -919,25 +1045,24 @@ def generate_rgb_distance_comparison(output_dir=None):
     }
     
     try:
-        # Load original image
-        original_img_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", test_image)
-        original_img = np.array(Image.open(original_img_path))
+        original_image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", test_image)
+        original_image = load_image(original_image_path)
         
         # Run with RGB distance
         print("\nRunning with RGB distance metric...")
-        rgb_palette, rgb_fitness, rgb_history, rgb_img_result, _, rgb_kmeans_image = run_image_quantization(
+        rgb_palette, rgb_fitness, rgb_history, rgb_image_result, _, rgb_kmeans_image = run_image_quantization(
             image_name=test_image,
             **{k: v for k, v in rgb_config.items() if k != 'name'}
         )
         
-        # Save RGB result image
-        rgb_img_path = os.path.join(aux_output_dir, "rgb_result.png")
-        Image.fromarray(rgb_img_result).save(rgb_img_path)
-        
-        # Save RGB kmeans initialization image
-        rgb_kmeans_path = os.path.join(aux_output_dir, "rgb_kmeans_init.png")
-        Image.fromarray(rgb_kmeans_image).save(rgb_kmeans_path)
+        # Save RGB results
+        rgb_image_path = os.path.join(aux_output_dir, "rgb_result.png")
+        save_image(rgb_image_result, rgb_image_path)
 
+        rgb_kmeans_path = os.path.join(aux_output_dir, "rgb_kmeans_init.png")
+        save_image(rgb_kmeans_image, rgb_kmeans_path)
+
+        
         # Run with perceptual distance
         print("\nRunning with perceptual distance metric...")
         perceptual_palette, perceptual_fitness, perceptual_history, perceptual_img_result, _, perceptual_kmeans_image= run_image_quantization(
@@ -945,20 +1070,20 @@ def generate_rgb_distance_comparison(output_dir=None):
             **{k: v for k, v in perceptual_config.items() if k != 'name'}
         )
         
-        # Save perceptual result image
+        # Save perceptual results
         perceptual_img_path = os.path.join(aux_output_dir, "perceptual_result.png")
-        Image.fromarray(perceptual_img_result).save(perceptual_img_path)
+        save_image(perceptual_img_result, perceptual_img_path)
         
-        # Save perceptual kmeans initialization image
         perceptual_kmeans_path = os.path.join(aux_output_dir, "perceptual_kmeans_init.png")
-        Image.fromarray(perceptual_kmeans_image).save(perceptual_kmeans_path)
+        save_image(perceptual_kmeans_image, perceptual_kmeans_path)
 
+        
         # Create visualization of the results
         plt.figure(figsize=(15, 10))
         
         # Original image
         plt.subplot(2, 3, 1)
-        plt.imshow(original_img)
+        plt.imshow(original_image)
         plt.title("Original Image")
         plt.axis('off')
         
@@ -969,7 +1094,7 @@ def generate_rgb_distance_comparison(output_dir=None):
         plt.axis('off')
         
         plt.subplot(2, 3, 3)
-        plt.imshow(rgb_img_result)
+        plt.imshow(rgb_image_result)
         plt.title(f"RGB Distance - Final\nFitness: {rgb_fitness:.6f}")
         plt.axis('off')
         
@@ -1023,6 +1148,308 @@ def generate_rgb_distance_comparison(output_dir=None):
         print(f"Error generating RGB distance comparison: {str(e)}")
         traceback.print_exc()
 
+def run_caching_comparison_multiple_colors(image_name='squareSix.jpg'):
+    """
+    Runs a comparison between caching and non-caching implementations
+    with multiple color counts while maintaining the rest of the configuration.
+    
+    Args:
+        image_name (str): Name of the image to test
+        color_counts (list): List of color counts to test
+    """
+    repetitions = REPETITIONS
+    color_counts = BASIC_COLOR_CHANGES
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    output_dir = f"analysis/caching_colors_comparison_{timestamp}"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    print(f"Running caching comparison with {repetitions} repetitions for each configuration")
+    print(f"Testing color counts: {color_counts}")
+    print(f"Image: {image_name}")
+    
+    # Base configurations from CACHING_TEST_CONFIGS
+    base_caching_config = next((cfg for cfg in CACHING_TEST_CONFIGS if cfg['name'] == 'caching_enabled'), None)
+    base_no_caching_config = next((cfg for cfg in CACHING_TEST_CONFIGS if cfg['name'] == 'caching_disabled'), None)
+    
+    if not base_caching_config or not base_no_caching_config:
+        print("Error: Caching comparison configurations not found")
+        return
+    
+    all_results = {}
+    
+    # Run tests for each color count
+    for num_colors in color_counts:
+        print(f"\n{'='*60}")
+        print(f"TESTING WITH {num_colors} COLORS")
+        print(f"{'='*60}")
+        
+        # Create copies of the configurations and update the color count
+        caching_config = dict(base_caching_config)
+        caching_config['num_colors'] = num_colors
+        
+        no_caching_config = dict(base_no_caching_config)
+        no_caching_config['num_colors'] = num_colors
+        
+        # Results for this color count
+        color_results = {
+            'caching': {
+                'fitness': [],
+                'execution_time': [],
+                'fitness_history': []
+            },
+            'no_caching': {
+                'fitness': [],
+                'execution_time': [],
+                'fitness_history': []
+            }
+        }
+        
+        # Run with caching for this color count
+        print(f"\n=== With Caching ({num_colors} colors) ===")
+        for i in range(1, repetitions + 1):
+            print(f"\nRepetition {i}/{repetitions}")
+            start_time = datetime.now()
+            
+            palette, fitness, history, result_img, _, _ = run_image_quantization(
+                image_name=image_name,
+                **{k: v for k, v in caching_config.items() if k != 'name'}
+            )
+            
+            execution_time = (datetime.now() - start_time).total_seconds()
+            
+            color_results['caching']['fitness'].append(fitness)
+            color_results['caching']['execution_time'].append(execution_time)
+            color_results['caching']['fitness_history'].append(history)
+            
+            print(f"Fitness: {fitness:.6f}, Time: {execution_time:.2f}s")
+        
+        # Run without caching for this color count
+        print(f"\n=== Without Caching ({num_colors} colors) ===")
+        for i in range(1, repetitions + 1):
+            print(f"\nRepetition {i}/{repetitions}")
+            start_time = datetime.now()
+            
+            palette, fitness, history, result_img, _, _ = run_image_quantization(
+                image_name=image_name,
+                **{k: v for k, v in no_caching_config.items() if k != 'name'}
+            )
+            
+            execution_time = (datetime.now() - start_time).total_seconds()
+            
+            color_results['no_caching']['fitness'].append(fitness)
+            color_results['no_caching']['execution_time'].append(execution_time)
+            color_results['no_caching']['fitness_history'].append(history)
+            
+            print(f"Fitness: {fitness:.6f}, Time: {execution_time:.2f}s")
+        
+        # Calculate and store statistics
+        caching_results = color_results['caching']
+        no_caching_results = color_results['no_caching']
+        
+        caching_avg_fitness = sum(caching_results['fitness']) / len(caching_results['fitness'])
+        caching_avg_time = sum(caching_results['execution_time']) / len(caching_results['execution_time'])
+        
+        no_caching_avg_fitness = sum(no_caching_results['fitness']) / len(no_caching_results['fitness'])
+        no_caching_avg_time = sum(no_caching_results['execution_time']) / len(no_caching_results['execution_time'])
+        
+        caching_best_idx = caching_results['fitness'].index(max(caching_results['fitness']))
+        no_caching_best_idx = no_caching_results['fitness'].index(max(no_caching_results['fitness']))
+        
+        # Store summary statistics for this color count
+        all_results[num_colors] = {
+            'caching': {
+                'results': caching_results,
+                'avg_fitness': caching_avg_fitness,
+                'avg_time': caching_avg_time,
+                'best_idx': caching_best_idx
+            },
+            'no_caching': {
+                'results': no_caching_results,
+                'avg_fitness': no_caching_avg_fitness,
+                'avg_time': no_caching_avg_time,
+                'best_idx': no_caching_best_idx
+            }
+        }
+        
+        # Print summary for this color count
+        print(f"\n=== Summary for {num_colors} Colors ===")
+        print("\nWith Caching:")
+        print(f"Average Fitness: {caching_avg_fitness:.6f}")
+        print(f"Average Time: {caching_avg_time:.2f}s")
+        print(f"Best Fitness: {caching_results['fitness'][caching_best_idx]:.6f}")
+        
+        print("\nWithout Caching:")
+        print(f"Average Fitness: {no_caching_avg_fitness:.6f}")
+        print(f"Average Time: {no_caching_avg_time:.2f}s")
+        print(f"Best Fitness: {no_caching_results['fitness'][no_caching_best_idx]:.6f}")
+        
+        speedup = no_caching_avg_time / caching_avg_time if caching_avg_time > 0 else 0
+        print(f"\nSpeed improvement with caching: {speedup:.2f}x")
+        
+        # For each color count, save the best results as images
+        color_dir = os.path.join(output_dir, f"colors_{num_colors}")
+        os.makedirs(color_dir, exist_ok=True)
+
+    # Generate comparison visualizations across all color counts
+    generate_color_comparison_visualizations(all_results, color_counts, output_dir)
+    
+    # Generate the combined report
+    generate_color_comparison_report(all_results, color_counts, image_name, repetitions, output_dir)
+    
+    print(f"\nComparison complete. Results saved to {output_dir}")
+    return output_dir
+
+def generate_color_comparison_visualizations(all_results, color_counts, output_dir):
+    """Generate visualizations comparing caching performance across different color counts"""
+    
+    vis_dir = os.path.join(output_dir, "visualizations")
+    os.makedirs(vis_dir, exist_ok=True)
+    
+    # 1. Execution time comparison across color counts
+    plt.figure(figsize=(10, 6))
+    x = range(len(color_counts))
+    width = 0.35
+    
+    caching_times = [all_results[c]['caching']['avg_time'] for c in color_counts]
+    no_caching_times = [all_results[c]['no_caching']['avg_time'] for c in color_counts]
+    
+    plt.bar([i - width/2 for i in x], caching_times, width, label='With Caching')
+    plt.bar([i + width/2 for i in x], no_caching_times, width, label='Without Caching')
+    
+    plt.xlabel('Number of Colors')
+    plt.ylabel('Execution Time (seconds)')
+    plt.title('Average Execution Time by Color Count')
+    plt.xticks(x, color_counts)
+    plt.legend()
+    plt.grid(axis='y', alpha=0.3)
+    plt.savefig(os.path.join(vis_dir, 'execution_time_by_colors.png'), dpi=300)
+    plt.close()
+    
+    # 2. Speedup factor across color counts
+    plt.figure(figsize=(10, 6))
+    speedups = [
+        all_results[c]['no_caching']['avg_time'] / all_results[c]['caching']['avg_time'] 
+        if all_results[c]['caching']['avg_time'] > 0 else 0
+        for c in color_counts
+    ]
+    
+    plt.bar(color_counts, speedups)
+    plt.axhline(y=1.0, color='r', linestyle='--', alpha=0.7)
+    plt.xlabel('Number of Colors')
+    plt.ylabel('Speedup Factor')
+    plt.title('Caching Speedup by Color Count')
+    plt.grid(axis='y', alpha=0.3)
+    plt.savefig(os.path.join(vis_dir, 'speedup_by_colors.png'), dpi=300)
+    plt.close()
+    
+    # 3. Fitness comparison
+    plt.figure(figsize=(10, 6))
+    caching_fitness = [all_results[c]['caching']['avg_fitness'] for c in color_counts]
+    no_caching_fitness = [all_results[c]['no_caching']['avg_fitness'] for c in color_counts]
+    
+    plt.bar([i - width/2 for i in x], caching_fitness, width, label='With Caching')
+    plt.bar([i + width/2 for i in x], no_caching_fitness, width, label='Without Caching')
+    
+    plt.xlabel('Number of Colors')
+    plt.ylabel('Average Fitness')
+    plt.title('Average Fitness by Color Count')
+    plt.xticks(x, color_counts)
+    plt.legend()
+    plt.grid(axis='y', alpha=0.3)
+    plt.savefig(os.path.join(vis_dir, 'fitness_by_colors.png'), dpi=300)
+    plt.close()
+
+def generate_color_comparison_report(all_results, color_counts, image_name, repetitions, output_dir):
+    """Generate a comprehensive report of the caching comparison across color counts"""
+    
+    with open(os.path.join(output_dir, 'color_caching_comparison_report.md'), 'w') as f:
+        f.write("# Caching vs. No Caching Performance Across Color Counts\n\n")
+        f.write(f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"**Image:** {image_name}\n")
+        f.write(f"**Repetitions per test:** {repetitions}\n\n")
+        
+        # Overall summary table
+        f.write("## Summary Table\n\n")
+        f.write("| Color Count | Metric | With Caching | Without Caching | Difference | Speedup |\n")
+        f.write("|------------|--------|-------------|----------------|------------|--------|\n")
+        
+        for num_colors in color_counts:
+            data = all_results[num_colors]
+            speedup = data['no_caching']['avg_time'] / data['caching']['avg_time'] if data['caching']['avg_time'] > 0 else 0
+            
+            f.write(f"| **{num_colors}** | Avg. Fitness | {data['caching']['avg_fitness']:.6f} | {data['no_caching']['avg_fitness']:.6f} | {data['caching']['avg_fitness'] - data['no_caching']['avg_fitness']:.6f} | - |\n")
+            f.write(f"| | Avg. Time (s) | {data['caching']['avg_time']:.2f} | {data['no_caching']['avg_time']:.2f} | {data['no_caching']['avg_time'] - data['caching']['avg_time']:.2f} | **{speedup:.2f}x** |\n")
+        
+        # Detailed results for each color count
+        for num_colors in color_counts:
+            data = all_results[num_colors]
+            f.write(f"\n## Detailed Results for {num_colors} Colors\n\n")
+            
+            f.write("### With Caching\n\n")
+            f.write("| Run | Fitness | Time (s) |\n")
+            f.write("|-----|---------|----------|\n")
+            for i in range(repetitions):
+                f.write(f"| {i+1} | {data['caching']['results']['fitness'][i]:.6f} | {data['caching']['results']['execution_time'][i]:.2f} |\n")
+            
+            f.write("\n### Without Caching\n\n")
+            f.write("| Run | Fitness | Time (s) |\n")
+            f.write("|-----|---------|----------|\n")
+            for i in range(repetitions):
+                f.write(f"| {i+1} | {data['no_caching']['results']['fitness'][i]:.6f} | {data['no_caching']['results']['execution_time'][i]:.2f} |\n")
+        
+        # Analysis section
+        f.write("\n## Analysis\n\n")
+        
+        # Calculate average speedup
+        avg_speedup = sum([
+            all_results[c]['no_caching']['avg_time'] / all_results[c]['caching']['avg_time'] 
+            if all_results[c]['caching']['avg_time'] > 0 else 0
+            for c in color_counts
+        ]) / len(color_counts)
+        
+        # Find color with max speedup
+        max_speedup_color = max(color_counts, key=lambda c: 
+            all_results[c]['no_caching']['avg_time'] / all_results[c]['caching']['avg_time'] 
+            if all_results[c]['caching']['avg_time'] > 0 else 0
+        )
+        
+        max_speedup = all_results[max_speedup_color]['no_caching']['avg_time'] / all_results[max_speedup_color]['caching']['avg_time']
+        
+        f.write(f"### Effect of Color Count on Caching Performance\n\n")
+        f.write(f"- **Average speedup across all color counts:** {avg_speedup:.2f}x\n")
+        f.write(f"- **Maximum speedup:** {max_speedup:.2f}x (with {max_speedup_color} colors)\n")
+        
+        # Check if speedup increases with color count
+        first_speedup = all_results[color_counts[0]]['no_caching']['avg_time'] / all_results[color_counts[0]]['caching']['avg_time']
+        last_speedup = all_results[color_counts[-1]]['no_caching']['avg_time'] / all_results[color_counts[-1]]['caching']['avg_time']
+        
+        if last_speedup > first_speedup:
+            f.write("- **Trend:** Caching provides greater benefits as color count increases\n")
+        elif first_speedup > last_speedup:
+            f.write("- **Trend:** Caching provides greater benefits with fewer colors\n")
+        else:
+            f.write("- **Trend:** Caching benefit appears to be consistent across color counts\n")
+        
+        # Conclusion
+        f.write("\n## Conclusion\n\n")
+        if avg_speedup > 1.5:
+            f.write(f"Caching provides a significant performance improvement across all tested color counts, with an average speedup of {avg_speedup:.2f}x. ")
+        elif avg_speedup > 1.1:
+            f.write(f"Caching provides a moderate performance improvement across all tested color counts, with an average speedup of {avg_speedup:.2f}x. ")
+        else:
+            f.write(f"Caching provides only a slight performance improvement across all tested color counts, with an average speedup of {avg_speedup:.2f}x. ")
+        
+        # Impact on solution quality
+        avg_fitness_diffs = [all_results[c]['caching']['avg_fitness'] - all_results[c]['no_caching']['avg_fitness'] for c in color_counts]
+        avg_fitness_diff = sum(avg_fitness_diffs) / len(avg_fitness_diffs)
+        
+        if abs(avg_fitness_diff) < 0.001:
+            f.write("The use of caching has no significant impact on solution quality.\n")
+        elif avg_fitness_diff > 0:
+            f.write(f"Additionally, caching slightly improves solution quality by {avg_fitness_diff:.6f} on average.\n")
+        else:
+            f.write(f"The use of caching slightly reduces solution quality by {-avg_fitness_diff:.6f} on average.\n")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyze genetic algorithm performance")
     parser.add_argument('--output', '-o', type=str, default=None,
@@ -1032,10 +1459,12 @@ if __name__ == "__main__":
     parser.add_argument('--run', '-r', type=str, default=None, 
                         choices=[cfg['name'] for cfg in CONFIGURATIONS] + ['all'],
                         help="Run a specific configuration or 'all' configurations")
-    parser.add_argument('--image', '-i', type=str, default='squareFour.jpg',
+    parser.add_argument('--image', '-i', type=str, default='squareSix.jpg',
                         help="Image to use for tests")
     parser.add_argument('--rgb-comparison', action='store_true',
                     help="Generate RGB vs perceptual distance comparison")
+    parser.add_argument('--caching-comparison', action='store_true',
+                    help="Run caching vs non-caching comparison")
     
     args = parser.parse_args()
     
@@ -1052,10 +1481,18 @@ if __name__ == "__main__":
                 run_configuration_test(config_to_run, image_name=args.image)
             else:
                 print(f"Configuration '{args.run}' not found")
+    
+    # Generate RGB distance comparison if requested
     elif args.rgb_comparison:
         generate_rgb_distance_comparison(args.output)
         print("RGB distance comparison completed")
-    else:
+    
+    # Run caching comparison if requested
+    elif args.caching_comparison:
+        run_caching_comparison_multiple_colors(args.image)
+        print("Caching comparison completed")
+
+    else:        
         # Run the analysis
         df = collect_and_analyze_reports(args.output)
         
