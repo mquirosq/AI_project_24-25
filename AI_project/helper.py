@@ -82,13 +82,16 @@ def convert_image_to_palette(image, palette):
     
     pixels = image.reshape(-1, 3)
     
-    converted_pixels = np.zeros_like(pixels)
+    # Use numpy to compute the Euclidean distance between each pixel and each color in the palette
+    # By using this expression we get a x10 speedup compared to the for loop
+    # np.newaxis adds a new axis to the array. Numpy boradcasts the arrays to make them compatible for subtraction
+    # So we get (n_pixels, n_colors, 3), that with the sqrt give us (n_pixels, n_colors)
+    # That is, one distance for each pixel to each color in the palette
+    distances = np.sqrt(np.sum((pixels[:, np.newaxis, :] - palette[np.newaxis, :, :]) ** 2, axis=2))
     
-    # For each pixel in the image, find the closest color in the palette
-    for i, pixel in enumerate(pixels):
-        distances = np.linalg.norm(palette - pixel, axis=1)
-        closest_color_index = np.argmin(distances)
-        converted_pixels[i] = palette[closest_color_index]
+    closest_color_indices = np.argmin(distances, axis=1)
+    
+    converted_pixels = palette[closest_color_indices]
     
     converted_image = converted_pixels.reshape(image.shape)
     
@@ -377,7 +380,7 @@ def save_palette(palette, filename):
 
     save_image(palette_image, filename)
 
-def save_image_with_palette(image, palette, filename="image_with_palette.png"):
+def save_image_with_palette(image, palette, filename="image_with_palette.png", fitness=None):
     """
     Save an image with a color palette to a file
     
@@ -385,6 +388,7 @@ def save_image_with_palette(image, palette, filename="image_with_palette.png"):
         image: Input image to save
         palette: Color palette to display
         filename: Path to save the image file
+        fitness: Fitness value to display in the title (if None, does not display)
     Returns:
         None. Saves the image and palette to the specified file.
     """
@@ -407,11 +411,14 @@ def save_image_with_palette(image, palette, filename="image_with_palette.png"):
         start_y = i * box_height
         end_y = min(start_y + box_height, palette_height)
         palette_img[start_y:end_y, :] = palette[i]
-    
+
     # Display the palette in the second subplot
     axs[1].imshow(palette_img)
     axs[1].set_title(f"Color Palette ({num_colors} colors)")
     axs[1].axis('off')
+
+    if fitness is not None:
+        axs[0].set_title(f"Image (Fitness: {fitness:.2f})")
 
     fig.savefig(filename, bbox_inches='tight', dpi=300)
     plt.close(fig)
