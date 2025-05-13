@@ -430,7 +430,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
     
     def run(self, population_size, generations, mutation_rate=0.1, 
             crossover_rate=0.8, elitism=2, selection_method='roulette',
-            tournament_size=3, save_results=False, adaptation_rate=1, 
+            tournament_size=3, adaptation_rate=1, 
             adaptation_threshold=10, halting_stagnation_threshold=None):
         """
         Run the genetic algorithm for a specified number of generations.
@@ -443,7 +443,6 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             elitism: Number of best individuals to carry over to the next generation
             selection_method: Method of selection ('roulette', 'tournament', 'rank')
             tournament_size: Size of the tournament for tournament selection
-            save_results: Whether to save results
             adaptation_rate: Rate of adaptation for mutation
             adaptation_threshold: Threshold for adaptation
             halting_stagnation_threshold: Number of generations to wait before halting if no improvement is detected. If using adaptation, it is recommended to set it over the adaptation_threshold
@@ -475,8 +474,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             tournament_size=tournament_size,
             adaptation_rate=adaptation_rate,
             adaptation_threshold=adaptation_threshold,
-            halting_stagnation_threshold=halting_stagnation_threshold,
-            save_results=save_results
+            halting_stagnation_threshold=halting_stagnation_threshold
         )
         
         best_palette, best_fitness, fitness_history, best_image = parent_results

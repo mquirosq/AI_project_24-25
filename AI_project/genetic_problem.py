@@ -27,6 +27,7 @@ class GeneticProblem:
         
         self.fitness_cache = {}
         self.use_caching = use_caching
+        self.save_results = save_results
     
     def generate_individual(self):
         """
@@ -195,7 +196,7 @@ class GeneticProblem:
     def run(self, population_size, generations, mutation_rate=0.1, 
             crossover_rate=0.8, elitism=2, selection_method='roulette',
             tournament_size=3, adaptation_rate=1, adaptation_threshold=10, 
-            halting_stagnation_threshold=None, save_results=False,):
+            halting_stagnation_threshold=None):
         """
         Run the genetic algorithm.
 
@@ -210,7 +211,6 @@ class GeneticProblem:
             adaptation_rate: Rate of mutation adaptation (1 for no adaptation)
             adaptation_threshold: Number of generations to wait before adapting mutation rate
             halting_stagnation_threshold: Number of generations to wait before halting if no improvement is detected. If using adaptation, it is recommended to set it over the adaptation_threshold
-            save_results: Whether to save the results
     
         Returns:
             best_individual: The best individual found
@@ -337,7 +337,7 @@ class GeneticProblem:
             })
             
             # Save results for this generation only if it improved
-            if save_results and improved:
+            if self.save_results and improved:
                 self.save_generation_results(gen_best_individual, generation)
             
             # Create next generation
@@ -352,7 +352,7 @@ class GeneticProblem:
         total_time = time.time() - start_time
             
         # Save final results
-        if save_results:
+        if self.save_results:
             self.save_best_results(best_individual)
             self.save_performance_report(performance_log, best_individual, total_time)
             

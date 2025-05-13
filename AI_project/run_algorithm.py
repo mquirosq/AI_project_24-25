@@ -58,7 +58,6 @@ def run_image_quantization(image_name, num_colors=10, restricted=False, populati
         elitism=elitism,
         selection_method=selection_method,
         tournament_size=tournament_size,
-        save_results=save_results,
         adaptation_rate=adaptation_rate,
         adaptation_threshold=adaptation_threshold, 
         halting_stagnation_threshold=halting_stagnation_threshold,
@@ -73,13 +72,13 @@ def run_image_quantization(image_name, num_colors=10, restricted=False, populati
     return best_palette, best_fitness, fitness_history, bestImage, kMeans_palette, kMeans_image
 
 if __name__ == "__main__":
-    image_name = "squareFour.jpg" # Example image name, must be in the images folder
-    num_colors = 10 # Number of colors in the palette
+    image_name = "cat.jpg" # Example image name, must be in the images folder
+    num_colors = 64 # Number of colors in the palette
     
-    restricted = False # Whether to use a only colors in the original image color palette
+    restricted = True # Whether to use a only colors in the original image color palette
     
     population_size = 20 # Size of the population for the genetic algorithm
-    generations = 50 # Number of generations to run the genetic algorithm
+    generations = 10 # Number of generations to run the genetic algorithm
     
     selection_method = 'tournament' # Selection method to use ('roulette', 'tournament', 'rank')
     tournament_size = 3 # Size of the tournament for tournament selection
