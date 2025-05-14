@@ -226,14 +226,18 @@ def display_image_with_palette(image, palette=None, title="Image with Color Pale
     # Create palette display image
     num_colors = len(palette)
     palette_height = image.shape[0]
-    box_height = palette_height // num_colors
+    box_height = palette_height / num_colors
     
     palette_width = 100
     palette_img = np.zeros((palette_height, palette_width, 3), dtype=np.uint8)
     
     for i in range(num_colors):
-        start_y = i * box_height
-        end_y = min(start_y + box_height, palette_height)
+        start_y = int(i * box_height)
+        end_y = int((i + 1) * box_height)
+
+        if i == num_colors - 1:
+            end_y = palette_height
+        
         palette_img[start_y:end_y, :] = palette[i]
     
     # Display the palette in the second subplot
@@ -408,8 +412,12 @@ def save_image_with_palette(image, palette, filename="image_with_palette.png", f
     palette_img = np.zeros((palette_height, palette_width, 3), dtype=np.uint8)
     
     for i in range(num_colors):
-        start_y = i * box_height
-        end_y = min(start_y + box_height, palette_height)
+        start_y = int(i * box_height)
+        end_y = int((i + 1) * box_height)
+
+        if i == num_colors - 1:
+            end_y = palette_height
+
         palette_img[start_y:end_y, :] = palette[i]
 
     # Display the palette in the second subplot
