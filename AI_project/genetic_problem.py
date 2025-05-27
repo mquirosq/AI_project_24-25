@@ -18,11 +18,14 @@ class GeneticProblem:
         use_caching: Whether to use caching for fitness calculations
     """
     
-    def __init__(self, results_dir=None, save_results=False, use_caching=True):
+    def __init__(self, results_dir=None, save_results=True, use_caching=True):
         
         if save_results:
-            timestamp = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-            self.results_dir = f"{results_dir}_{timestamp}"
+            if results_dir is None:
+                timestamp = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+                self.results_dir = f"{results_dir}_{timestamp}"
+            else:
+                self.results_dir = results_dir
             os.makedirs(self.results_dir, exist_ok=True)
         
         self.fitness_cache = {}
@@ -215,8 +218,10 @@ class GeneticProblem:
         Returns:
             best_individual: The best individual found
             best_fitness: The fitness of the best individual
-            fitness_history: List of fitness scores for each generation
+            fitness_history: List of best fitness score for each generation
+            average_fitness_history: List of average fitness score for each generation
             bestResult: The best result from the best individual (if applicable)
+            statistics: Dictionary with statistics of the run, including best fitness, average fitness, and diversity metrics
         """
 
         # Save parameters for later use
@@ -367,7 +372,7 @@ class GeneticProblem:
 
         bestResult = self.getBestResult(best_individual)
 
-        return best_individual, best_fitness, fitness_history, bestResult
+        return best_individual, best_fitness, fitness_history, average_fitness_history, bestResult, performance_log
         
     def save_performance_report(self, performance_log, best_individual, total_time):
         """

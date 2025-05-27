@@ -12,7 +12,7 @@ class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
     Genetic algorithm for finding an optimal color palette for an image where the colors must exist in the originalimage.
     """
     
-    def __init__(self, image_path, num_colors=5, kMeans=False, mutate_diverse=False, crossover_method='one-point', save_results=True, display=True, use_caching=True):
+    def __init__(self, image_path, num_colors=5, kMeans=False, mutate_diverse=False, crossover_method='one-point', save_results=True, display=True, use_caching=True, results_dir=None):
         """
         Initialize the problem with an image and palette size.
         
@@ -25,11 +25,14 @@ class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
             save_results: Whether to save results
             display: Whether to display results
             use_caching: Whether to use caching for results
+            results_dir: Directory to save results, defaults to a subdirectory in the image's directory
         """
-        if not hasattr(self, 'results_dir'):
+        if results_dir is not None:
+            self.results_dir = results_dir
+        else:
             self.results_dir = os.path.join(os.path.dirname(image_path), "tests", os.path.splitext(os.path.basename(image_path))[0], "restricted")
-            
-        super().__init__(image_path, num_colors, kMeans, mutate_diverse, crossover_method, save_results=save_results, display=display, use_caching=use_caching)
+
+        super().__init__(image_path, num_colors, kMeans, mutate_diverse, crossover_method, save_results=save_results, display=display, use_caching=use_caching, results_dir=self.results_dir)
 
         self.colors = np.unique(self.image.reshape(-1, self.image.shape[2]), axis=0)
         
