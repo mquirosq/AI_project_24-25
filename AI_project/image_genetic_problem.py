@@ -270,7 +270,6 @@ class ImagePaletteGeneticProblem(GeneticProblem):
 
             image_filename = os.path.join(images_dir, f"image_gen_{gen_num}.png")
             save_image_with_palette(converted_image, best_palette, image_filename)
-            print(f"Saved generation {gen_num} image to {image_filename}")
             print(f"Saved results for generation {generation + 1}")
         except Exception as e:
             print(f"Error saving generation results: {e}")
@@ -557,7 +556,7 @@ if __name__ == "__main__":
     # Create and run the genetic algorithm
     problem = ImagePaletteGeneticProblem(image_path, num_colors, kMeans=False, mutate_diverse=True, crossover_method='closest_pairs', save_results=True, display=True, use_caching=True)
     
-    best_palette, best_fitness, fitness_history, bestImage, _, _ = problem.run(
+    best_palette, best_fitness, fitness_history, average_fitness_history, best_image, palette, kmeans_image, statistics = problem.run(
         population_size=population_size,
         generations=generations,
         mutation_rate=0.2,

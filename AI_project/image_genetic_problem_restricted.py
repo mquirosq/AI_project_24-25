@@ -99,7 +99,7 @@ if __name__ == "__main__":
     # Create and run the genetic algorithm
     problem = ImagePaletteGeneticProblemRestricted(image_path, num_colors, kMeans=False, mutate_diverse=True, crossover_method='closest_pairs', save_results=True, display=True, use_caching=True)
     
-    best_palette, best_fitness, fitness_history, bestImage, _, _ = problem.run(
+    best_palette, best_fitness, fitness_history, average_fitness_history, best_image, palette, kmeans_image, statistics = problem.run(
         population_size=population_size,
         generations=generations,
         mutation_rate=0.2,
