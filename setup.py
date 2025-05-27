@@ -5,11 +5,11 @@ with open('requirements.txt') as f:
 
 setup(
     name="ai-project-24-25",
-    version="0.1.0",
+    version="1.0.0",
     packages=find_packages(),
     install_requires=requirements,
     author="María Quirós Quiroga",
-    author_email="marquiqui@alum.us,es",
+    author_email="marquiqui@alum.us.es",
     description="AI Project for 2024-2025",
     python_requires=">=3.7",
 )
