@@ -182,8 +182,6 @@ def run_configuration_test(
                 test_config['num_colors'] = num_colors
                 
                 config_key = test_config.get('name', '').replace(' ', '_').lower()
-                if test_type == 'selection':
-                    config_key = test_config.get('selection_method', '')
                 
                 if verbose:
                     print(f"\n--- Testing {config_key} with {num_colors} colors ---")
@@ -298,7 +296,7 @@ def generate_test_configurations(test_type):
     Generate appropriate test configurations based on test type
     
     Args:
-        test_type (str): Type of test ('caching', 'restriction_kmeans', 'selection', 'rgb')
+        test_type (str): Type of test ('caching', 'restriction_kmeans', 'selection', 'rgb', 'mutation', 'crossover', 'adaptation', 'early_stopping', 'hyperparameter_tuning', 'new')
         
     Returns:
         list: List of configuration dictionaries appropriate for the test type
@@ -317,7 +315,7 @@ def generate_test_configurations(test_type):
         'halting_stagnation_threshold': None,
         'kMeans': False,
         'mutate_diverse': False,
-        'crossover_method': 'one_point',
+        'crossover_method': 'closest_pairs',
         'use_caching': True,
         'display': False
     }
@@ -450,6 +448,7 @@ def generate_test_configurations(test_type):
         no_adaptation['name'] = 'no_adaptation'
         no_adaptation['adaptation_rate'] = 1.0
         no_adaptation['adaptation_threshold'] = None
+        no_adaptation['generations'] = 50
         configs.append(no_adaptation)
         
         # Low adaptation rate
@@ -457,6 +456,7 @@ def generate_test_configurations(test_type):
         low_adaptation['name'] = 'low_adaptation'
         low_adaptation['adaptation_rate'] = 1.05
         low_adaptation['adaptation_threshold'] = 5
+        low_adaptation['generations'] = 50
         configs.append(low_adaptation)
         
         # High adaptation rate
@@ -464,6 +464,7 @@ def generate_test_configurations(test_type):
         high_adaptation['name'] = 'high_adaptation'
         high_adaptation['adaptation_rate'] = 1.2
         high_adaptation['adaptation_threshold'] = 10
+        high_adaptation['generations'] = 50
         configs.append(high_adaptation)
         
         return configs
@@ -475,17 +476,20 @@ def generate_test_configurations(test_type):
         no_early_stopping = dict(base_config)
         no_early_stopping['name'] = 'no_early_stopping'
         no_early_stopping['halting_stagnation_threshold'] = None
+        no_early_stopping['generations'] = 50
         configs.append(no_early_stopping)
         
         # Early stopping with low threshold
         early_stopping_10 = dict(base_config)
         early_stopping_10['name'] = 'early_stopping_10'
+        no_early_stopping['generations'] = 50
         early_stopping_10['halting_stagnation_threshold'] = 10
         configs.append(early_stopping_10)
         
         # Early stopping with high threshold
         early_stopping_20 = dict(base_config)
         early_stopping_20['name'] = 'early_stopping_20'
+        early_stopping_20['generations'] = 50
         early_stopping_20['halting_stagnation_threshold'] = 20
         configs.append(early_stopping_20)
         
@@ -496,35 +500,35 @@ def generate_test_configurations(test_type):
         
         # Base configuration with moderate values
         base_tuning_config = dict(base_config)
-        base_tuning_config['population_size'] = 15
+        base_tuning_config['population_size'] = 10
         base_tuning_config['generations'] = 30
         base_tuning_config['mutation_rate'] = 0.2
         base_tuning_config['crossover_rate'] = 0.8
         base_tuning_config['elitism'] = 2
         
         # Varying population sizes (keeping other params fixed)
-        for pop_size in [5, 10, 20, 30]:
+        for pop_size in [5, 10, 20]:
             config = dict(base_tuning_config)
-            config['name'] = f'population_size{pop_size}'
+            config['name'] = f'population_size_{pop_size}'
             config['population_size'] = pop_size
             configs.append(config)
         
         # Varying generations (keeping other params fixed)
-        for gen in [15, 30, 50, 75]:
+        for gen in [15, 30, 50]:
             config = dict(base_tuning_config)
             config['name'] = f'gen_{gen}'
             config['generations'] = gen
             configs.append(config)
         
         # Varying crossover rates (keeping other params fixed)
-        for cr_rate in [0.5, 0.7, 0.85, 0.95]:
+        for cr_rate in [0.7, 0.85]:
             config = dict(base_tuning_config)
-            config['name'] = f'crossover_rate_{int(cr_rate*100)}'
+            config['name'] = f'crossoverRate_{int(cr_rate*100)}'
             config['crossover_rate'] = cr_rate
             configs.append(config)
         
         # Varying elitism (keeping other params fixed)
-        for elite in [1, 2, 4, 6]:
+        for elite in [1, 4]:
             config = dict(base_tuning_config)
             config['name'] = f'elite_{elite}'
             config['elitism'] = elite
@@ -607,12 +611,12 @@ def process_test_results(all_results):
             
             # Process stagnation detection
             stagnation_detected = results['stagnation_detected']
-            stagnation_count = sum(1 for x in stagnation_detected if x)
+            stagnation_count = sum(sum(1 for value in run if value) for run in stagnation_detected if run)
                 
             processed_stats[color_count][config_name]['stagnation_stats'] = {
-                'stagnation_frequency': stagnation_count / len(stagnation_detected),
-                'runs_with_stagnation': stagnation_count,
-                'total_runs': len(stagnation_detected)
+                'stagnation_frequency': stagnation_count / sum(len(run) for run in stagnation_detected),
+                'generations_with_stagnation': stagnation_count,
+                'total_generations': sum(len(run) for run in stagnation_detected)
             }
             
             # Process mutation rate adaptation if available
@@ -880,33 +884,26 @@ def generate_test_report(stats, best_images, test_type, color_counts, image_name
                         cache_stats = config_stats['cache_stats']
                         f.write(f"| {num_colors} | {config_name} | {cache_stats['overall_hit_ratio']:.2%} | ")
                         f.write(f"{int(cache_stats['total_cache_hits'])} | {int(cache_stats['total_cache_misses'])} |\n")
-            
-            f.write("\nHigher cache hit ratios indicate more efficient algorithm execution.\n")
+
         
         if test_type in ['early_stopping', 'adaptation', 'selection', 'new']:
-            # Check if there's interesting variation in stagnation (not all 100% or 0%)
             stagnation_rates = []
             for num_colors in color_counts:
                 for config_name, config_stats in stats[num_colors].items():
                     if 'stagnation_stats' in config_stats:
                         stagnation_rates.append(config_stats['stagnation_stats']['stagnation_frequency'])
             
-            has_variation = len(set(stagnation_rates)) > 1 if stagnation_rates else False
-            
-            if has_variation or test_type == 'early_stopping':
-                f.write("\n## Stagnation Analysis\n\n")
-                f.write("| Color Count | Configuration | Stagnation Frequency | Runs with Stagnation |\n")
-                f.write("|-------------|---------------|----------------------|---------------------|\n")
+            f.write("\n## Stagnation Analysis\n\n")
+            f.write("| Color Count | Configuration | Stagnation Frequency | Generations with Stagnation |\n")
+            f.write("|-------------|---------------|----------------------|---------------------|\n")
                 
-                for num_colors in color_counts:
-                    for config_name, config_stats in stats[num_colors].items():
-                        if 'stagnation_stats' in config_stats:
-                            stag_stats = config_stats['stagnation_stats']
-                            f.write(f"| {num_colors} | {config_name} | {stag_stats['stagnation_frequency']:.2%} | ")
-                            f.write(f"{stag_stats['runs_with_stagnation']}/{stag_stats['total_runs']} |\n")
-                
-                f.write("\nStagnation occurs when the algorithm fails to improve for a number of generations.\n")
-        
+            for num_colors in color_counts:
+                for config_name, config_stats in stats[num_colors].items():
+                    if 'stagnation_stats' in config_stats:
+                        stag_stats = config_stats['stagnation_stats']
+                        f.write(f"| {num_colors} | {config_name} | {stag_stats['stagnation_frequency']:.2%} | ")
+                        f.write(f"{stag_stats['generations_with_stagnation']}/{stag_stats['total_generations']} |\n")
+
         if test_type in ['early_stopping', 'adaptation', 'new']:
             f.write("\n## Mutation Rate Adaptation Analysis\n\n")
             f.write("| Color Count | Configuration | Min Rate | Max Rate | Average Change |\n")
@@ -918,8 +915,6 @@ def generate_test_report(stats, best_images, test_type, color_counts, image_name
                         mut_stats = config_stats['mutation_rate_stats']
                         f.write(f"| {num_colors} | {config_name} | {mut_stats['avg_min_rate']:.3f} | ")
                         f.write(f"{mut_stats['avg_max_rate']:.3f} | {mut_stats['avg_rate_change']:.3f} |\n")
-            
-            f.write("\nMutation rate adaptation dynamically adjusts mutation during execution based on improvement.\n")
         
         if test_type in ['early_stopping', 'adaptation', 'new']:
             f.write("\n## Early Stopping Analysis\n\n")
@@ -933,21 +928,7 @@ def generate_test_report(stats, best_images, test_type, color_counts, image_name
                         f.write(f"| {num_colors} | {config_name} | {es_stats['early_stopping_percentage']:.1f}% | ")
                         f.write(f"{es_stats['avg_generations']:.1f} |\n")
             
-            f.write("\nEarly stopping occurs when the algorithm halts due to stagnation.\n")
-        
-        if test_type == 'mutation':
-            f.write("\n## Mutation Strategy Analysis\n\n")
-            f.write("| Color Count | Configuration | Diverse Mutation | Mutation Rate | Avg Fitness | Time (s) |\n")
-            f.write("|-------------|---------------|-----------------|--------------|------------|----------|\n")
-            
-            for num_colors in color_counts:
-                for config_name, config_stats in stats[num_colors].items():
-                    is_diverse = "Yes" if "diverse" in config_name else "No"
-                    mutation_rate = "High" if "high" in config_name else "Low"
-                    f.write(f"| {num_colors} | {config_name} | {is_diverse} | {mutation_rate} | ")
-                    f.write(f"{config_stats['avg_best_fitness']:.6f} | {config_stats['avg_time']:.2f} |\n")
-            
-            f.write("\nDiverse mutation attempts to maintain color variety in the palette.\n")
+            f.write("\nEarly stopping reduces unnecessary generations when no improvement is detected.\n")
         
         elif test_type == 'crossover':
             f.write("\n## Crossover Method Analysis\n\n")
@@ -961,42 +942,6 @@ def generate_test_report(stats, best_images, test_type, color_counts, image_name
                     rate = "0%" if "no_crossover" in config_name else "80%" if "rate" not in config_name else config_name.split('_')[-1] + "%"
                     f.write(f"| {num_colors} | {config_name} | {method} | {rate} | ")
                     f.write(f"{config_stats['avg_best_fitness']:.6f} | {config_stats['avg_time']:.2f} |\n")
-
-        elif test_type == 'hyperparameter_tuning':
-            # Get all unique parameter configurations across all color counts
-            all_configs = set()
-            for num_colors in color_counts:
-                all_configs.update(stats[num_colors].keys())
-            
-            param_groups = {
-                'Population size': [c for c in all_configs if c.startswith('population_')],
-                'Generations': [c for c in all_configs if c.startswith('gen_')],
-                'Crossover rate': [c for c in all_configs if c.startswith('crossover_')],
-                'Elitism': [c for c in all_configs if c.startswith('elite_')]
-            }
-            
-            for param_name, configs in param_groups.items():
-                if not configs:
-                    continue
-                    
-                f.write(f"\n## {param_name} Analysis\n\n")
-                f.write("| Color Count | Configuration | Value | Avg Fitness | Time (s) | Efficiency (Fitness/Time) |\n")
-                f.write("|-------------|---------------|-------|------------|----------|---------------------------|\n")
-                
-                # Include all color counts in hyperparameter analysis
-                for num_colors in color_counts:
-                    sorted_configs = sorted([c for c in configs if c in stats[num_colors]], 
-                                        key=lambda x: int(x.split('_')[1]))
-                    
-                    for config in sorted_configs:
-                        value = config.split('_')[1]
-                        avg_fitness = stats[num_colors][config]['avg_best_fitness']
-                        avg_time = stats[num_colors][config]['avg_time']
-                        efficiency = avg_fitness / avg_time if avg_time > 0 else 0
-                        
-                        f.write(f"| {num_colors} | {config} | {value} | {avg_fitness:.6f} | {avg_time:.2f} | {efficiency:.6f} |\n")
-                
-            f.write("\n")
         
         f.write("\n## Reference Images\n\n")
         f.write("Best results from each configuration:\n\n")
@@ -1232,7 +1177,7 @@ if __name__ == "__main__":
         "--test_type",
         type=str,
         choices=['caching', 'restriction_kmeans', 'selection', 'mutation','crossover', 'adaptation', 'early_stopping', 'hyperparameter_tuning', 'rgb', 'new'],
-        help="Type of test to run: 'caching', 'restriction_kmeans', 'selection', 'rgb', or 'new'"
+        help="Type of test to run: 'caching', 'restriction_kmeans', 'selection', 'mutation','crossover', 'adaptation', 'early_stopping', 'hyperparameter_tuning', 'rgb' or 'new'"
     )
     
     parser.add_argument(
@@ -1284,7 +1229,6 @@ if __name__ == "__main__":
     
 
     if args.run:
-        # Run single algorithm without tests
         image_name = args.images[0] if isinstance(args.images, list) else args.images
         num_colors = args.colors[0] if isinstance(args.colors, list) else args.colors
         
@@ -1297,7 +1241,6 @@ if __name__ == "__main__":
         
         print(f"Single run complete. Results available in {results['output_dir']}")
     else:
-        # Run the unified comparison with provided arguments
         results = run_multiple_images_test(
             test_type=args.test_type,
             image_names=args.images,

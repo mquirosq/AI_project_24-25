@@ -167,9 +167,14 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         """
 
         child = np.zeros_like(parent1)
+
+        parent1_lab = color.rgb2lab(parent1.reshape(1, -1, 3) / 255.0)[0]
+        parent2_lab = color.rgb2lab(parent2.reshape(1, -1, 3) / 255.0)[0]
+    
+
         for i in range(len(parent1)):
             # Find the closest color in parent2 to the current color in parent1
-            distances = np.linalg.norm(parent2 - parent1[i], axis=1)
+            distances = np.linalg.norm(parent2_lab - parent1_lab[i], axis=1)
             closest_index = np.argmin(distances)
             
             if random.random() < 0.5:
@@ -410,8 +415,6 @@ class ImagePaletteGeneticProblem(GeneticProblem):
                 f.write(f"Total Evaluations: {total_evaluations}\n")
                 f.write(f"Cache Hits: {last_entry['cache_hits']} ({hit_rate:.2f}%)\n")
                 f.write(f"Cache Misses: {last_entry['cache_misses']}\n")
-        
-        print(f"Performance report saved to {report_filename}")
 
     
     def _format_individual(self, individual):
