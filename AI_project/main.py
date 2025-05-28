@@ -11,13 +11,13 @@ CONFIGURATIONS = [
     {
         'name': 'basic',                        # To identify the configuration
         
-        'restricted': False,                    # Whether to restrict color selection to colors in the original image  
+        'restricted': True,                    # Whether to restrict color selection to colors in the original image  
         
         'population_size': 10,                  # Size of the population for the genetic algorithm
-        'generations': 30,                      # Number of generations to run the algorithm
-        'mutation_rate': 0.2,                   # Probability of mutation for each individual
+        'generations': 50,                      # Number of generations to run the algorithm
+        'mutation_rate': 0.6,                   # Probability of mutation for each individual
         'crossover_rate': 0.8,                  # Probability of crossover between individuals
-        'elitism': 2,                           # Number of best individuals to carry over to the next generation   
+        'elitism': 1,                           # Number of best individuals to carry over to the next generation   
         'halting_stagnation_threshold': 20,     # Threshold for halting if no improvement is seen for this many generations
 
         'adaptation_rate': 1.1,                 # Rate at which mutation rate is adapted
@@ -26,12 +26,12 @@ CONFIGURATIONS = [
         'kMeans': True,                        # Whether to use KMeans clustering for initial population generation    
 
         'selection_method': 'tournament',       # Method for selecting individuals for reproduction
-        'tournament_size': 3,                   # Size of the tournament for selection methods that use tournaments
-        'mutate_diverse': False,                # Whether to use diverse mutation strategy (if True, the custom mutation operator is used)
-        'crossover_method': 'one_point',        # Method for crossover between individuals ('one_point', 'uniform', 'closest_pairs' - custom crossover)
+        'tournament_size': 3,                  # Size of the tournament for selection methods that use tournaments
+        'mutate_diverse': True,                # Whether to use diverse mutation strategy (if True, the custom mutation operator is used)
+        'crossover_method': 'closest_pairs',        # Method for crossover between individuals ('one_point', 'uniform', 'closest_pairs' - custom crossover)
         
-        'use_caching': False,                   # Whether to use caching for fitness evaluations (can speed up the algorithm significantly)
-        'display': True                         # Whether to results after each run
+        'use_caching': True,                   # Whether to use caching for fitness evaluations (can speed up the algorithm significantly)
+        'display': False                        # Whether to results after each run
     }
 ]
 
@@ -1148,6 +1148,7 @@ def run_algorithm(
         image_name=image_name,
         output_dir=output_dir,
         save_results=True,
+        num_colors=num_colors,
         **{k: v for k, v in config.items() if k not in ['name', 'num_colors']}
     )
     
