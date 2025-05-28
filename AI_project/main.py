@@ -766,7 +766,7 @@ def generate_test_results_visualizations(stats, test_type, color_counts, vis_dir
     plt.savefig(os.path.join(vis_dir, "best_fitness_comparison.png"), dpi=300)
     plt.close()
     
-    # Add cache hit ratio visualization if available (for caching test)
+    # Add cache hit ratio visualization (for caching test)
     if test_type == 'caching':
         plt.figure(figsize=(12, 7))
             
@@ -809,7 +809,7 @@ def generate_test_results_visualizations(stats, test_type, color_counts, vis_dir
     plt.savefig(os.path.join(vis_dir, "stagnation_frequency.png"), dpi=300)
     plt.close()
     
-    # Add mutation rate adaptation visualization if available
+    # Add mutation rate adaptation visualization
     for num_colors in color_counts:
         mutation_stats_available = any('mutation_rate_stats' in stats[num_colors][config] 
                                       for config in stats[num_colors])
@@ -927,44 +927,25 @@ def generate_test_report(stats, best_images, test_type, color_counts, image_name
                         es_stats = config_stats['early_stopping_info']
                         f.write(f"| {num_colors} | {config_name} | {es_stats['early_stopping_percentage']:.1f}% | ")
                         f.write(f"{es_stats['avg_generations']:.1f} |\n")
-            
-            f.write("\nEarly stopping reduces unnecessary generations when no improvement is detected.\n")
-        
-        elif test_type == 'crossover':
-            f.write("\n## Crossover Method Analysis\n\n")
-            f.write("| Color Count | Configuration | Method | Crossover Rate | Avg Fitness | Time (s) |\n")
-            f.write("|-------------|---------------|--------|---------------|-------------|----------|\n")
-            
-            # Use all color counts for crossover analysis
-            for num_colors in color_counts:
-                for config_name, config_stats in stats[num_colors].items():
-                    method = config_name.split('_')[0] if '_' in config_name else config_name
-                    rate = "0%" if "no_crossover" in config_name else "80%" if "rate" not in config_name else config_name.split('_')[-1] + "%"
-                    f.write(f"| {num_colors} | {config_name} | {method} | {rate} | ")
-                    f.write(f"{config_stats['avg_best_fitness']:.6f} | {config_stats['avg_time']:.2f} |\n")
         
         f.write("\n## Reference Images\n\n")
         f.write("Best results from each configuration:\n\n")
 
-        # Show all color counts and configurations
+        # Show all color counts and configurations images
         for num_colors in color_counts:
             f.write(f"\n### {num_colors} Colors\n\n")
             
-            # Sort configurations by fitness for organized display
             sorted_configs = sorted(
                 best_images[num_colors].items(), 
                 key=lambda x: x[1]['fitness'], 
                 reverse=True
             )
             
-            # Use a grid layout for more efficient display
-            grid_size = min(3, len(sorted_configs))  # Up to 3 images per row
+            grid_size = min(2, len(sorted_configs))
             if grid_size > 1:
                 f.write("<div style='display: grid; grid-template-columns: repeat({}, 1fr); gap: 10px;'>\n".format(grid_size))
-            
-            # Show all configurations
+
             for config_name, image_info in sorted_configs:
-                # Get relative path for markdown
                 rel_path = os.path.relpath(image_info['image_path'], output_dir)
                 
                 if grid_size > 1:
@@ -1112,8 +1093,7 @@ def run_algorithm(
     num_colors=16,
     config=CONFIGURATIONS[0],
     output_dir=None,
-    verbose=True
-):
+    verbose=True):
     """
     Run a single genetic algorithm execution.
     

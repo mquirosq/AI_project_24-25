@@ -9,7 +9,7 @@ import cv2
 
 class ImagePaletteGeneticProblemRestricted(ImagePaletteGeneticProblem):
     """
-    Genetic algorithm for finding an optimal color palette for an image where the colors must exist in the originalimage.
+    Genetic algorithm for finding an optimal color palette for an image where the colors must exist in the original image.
     """
     
     def __init__(self, image_path, num_colors=5, kMeans=False, mutate_diverse=False, crossover_method='one-point', save_results=True, display=True, use_caching=True, results_dir=None):
@@ -107,7 +107,6 @@ if __name__ == "__main__":
         elitism=2,
         selection_method='tournament',
         tournament_size=3,
-        save_results=True,
         adaptation_rate=1,
         adaptation_threshold=10,
         halting_stagnation_threshold=None

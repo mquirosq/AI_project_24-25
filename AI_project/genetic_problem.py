@@ -52,7 +52,7 @@ class GeneticProblem:
             individual: The individual to evaluate
         
         Returns:
-                Fitness score (higher is better)
+            Fitness score (higher is better)
         """
         pass
     

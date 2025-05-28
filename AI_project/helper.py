@@ -211,11 +211,9 @@ def display_image_with_palette(image, palette=None, title="Image with Color Pale
         None. Displays the image and palette in a window.
     """
     
-    # Compute palette if not provided
     if palette is None:
         palette = compute_palette(image)
     
-    # Create a figure with two subplots
     fig, axs = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={'width_ratios': [3, 1]})
     
     # Display the image in the first subplot

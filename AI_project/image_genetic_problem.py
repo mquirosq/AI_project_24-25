@@ -79,7 +79,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         converted_image = convert_image_to_palette(self.image, individual)
         converted_lab = color.rgb2lab(converted_image / 255.0)
         
-        # Calculate distance in LAB space (perceptually uniform)
+        # Calculate distance in LAB space (perceptually)
         distance = np.mean(np.sqrt(np.sum((image_lab - converted_lab)**2, axis=2)))
 
         # Penalize for repeated colors in the palette
@@ -267,7 +267,6 @@ class ImagePaletteGeneticProblem(GeneticProblem):
 
             converted_image = convert_image_to_palette(self.image, best_palette)
             
-            # Create numbered filenames
             gen_num = f"{generation + 1:03d}"
             
             images_dir = os.path.join(self.results_dir, "images")
@@ -276,6 +275,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             image_filename = os.path.join(images_dir, f"image_gen_{gen_num}.png")
             save_image_with_palette(converted_image, best_palette, image_filename)
             print(f"Saved results for generation {generation + 1}")
+        
         except Exception as e:
             print(f"Error saving generation results: {e}")
     
@@ -296,6 +296,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             if self.display: display_image_with_palette_comparison(self.image, final_image, best_palette, "Best Overall Palette", self.results_dir + "/final_comparison.png")
             
             print("Saved overall best results")
+        
         except Exception as e:
             print(f"Error saving best results: {e}")
 
@@ -350,7 +351,8 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         report_filename = os.path.join(self.results_dir, f"performance_report_{timestamp}.txt")
         
         with open(report_filename, 'w') as f:
-            # Write header
+            
+            # Header
             f.write("=" * 80 + "\n")
             f.write(f"GENETIC ALGORITHM PERFORMANCE REPORT\n")
             f.write(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -363,7 +365,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             f.write(f"Image Path: {self.image_path}\n")
             f.write(f"Number of Colors: {self.num_colors}\n")
 
-            # Write configuration
+            # Configuration
             f.write("CONFIGURATION\n")
             f.write("-" * 80 + "\n")
             f.write(f"Population Size: {self.population_size}\n")
@@ -380,11 +382,14 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             f.write(f"Uses KMeans: {'Yes' if self.kMeans else 'No'}\n")
             f.write(f"Uses Diverse Mutation: {'Yes' if self.use_mutate_diverse else 'No'}\n")
             f.write(f"Crossover Method: {self.crossover_method}\n\n")
-
+            
+            # Execution time
+            f.write("EXECUTION TIME\n")
+            f.write("-" * 80 + "\n")
             f.write(f"Total Execution Time: {total_time:.2f} seconds\n")
             f.write(f"Average Time per Generation: {total_time/len(performance_log):.2f} seconds\n\n")
             
-            # Write best solution
+            # Best solution
             f.write("BEST SOLUTION\n")
             f.write("-" * 80 + "\n")
             f.write(f"Best Fitness: {max(entry['best_fitness'] for entry in performance_log):.6f}\n")
@@ -392,7 +397,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
             f.write(f"Best Chromosome:\n{self._format_individual(best_individual)}\n\n")
             f.write(f"Total Generations: {len(performance_log)}\n")
 
-            # Write generation statistics with stagnation info
+            # Generation statistics
             f.write("GENERATION STATISTICS\n")
             f.write("-" * 110 + "\n")
             f.write("Gen | Best Fitness | Avg Fitness | Min Fitness | Stagnation | Mutation Rate | Adapted | Time (s)\n")
@@ -404,7 +409,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
                     f"{entry['min_fitness']:11.6f} | {entry.get('stagnation_count', 0):10d} | "
                     f"{entry.get('current_mutation_rate', 0.0):12.6f} | {mutation_adapted:7s} | {entry['time_seconds']:8.2f}\n")
             
-            # Write cache statistics
+            # Cache statistics
             if self.use_caching:
                 last_entry = performance_log[-1]
                 total_evaluations = last_entry['cache_hits'] + last_entry['cache_misses']
@@ -428,7 +433,7 @@ class ImagePaletteGeneticProblem(GeneticProblem):
         """
 
         if isinstance(individual, np.ndarray):
-            if individual.ndim == 2 and individual.shape[1] == 3:  # RGB colors
+            if individual.ndim == 2 and individual.shape[1] == 3:
                 return "\n".join([f"  Color {i+1}: RGB({c[0]}, {c[1]}, {c[2]})" 
                             for i, c in enumerate(individual)])
             return str(individual)
@@ -497,6 +502,8 @@ class ImagePaletteGeneticProblemRGBDistance(ImagePaletteGeneticProblem):
     Genetic algorithm for finding an optimal color palette for an image using RGB distance.
     This class has been created to ilustrate the problem of computing the distance in RGB space 
     and justify the use of lab color space for distance computations.
+
+    It should be used for educational purposes only, as it does not produce good results compared to using LAB color space.
     """
 
     def __init__(self, image_path, num_colors=5, kMeans=False, mutate_diverse=False, crossover_method='uniform', save_results=True, display=True, use_caching=True, results_dir=None):
@@ -567,7 +574,6 @@ if __name__ == "__main__":
         elitism=2,
         selection_method='tournament',
         tournament_size=3,
-        save_results=True,
         adaptation_rate=1,
         adaptation_threshold=10,
         halting_stagnation_threshold=None
