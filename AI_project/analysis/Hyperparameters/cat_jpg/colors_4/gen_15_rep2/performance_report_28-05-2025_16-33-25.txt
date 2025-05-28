@@ -1,0 +1,64 @@
+================================================================================
+GENETIC ALGORITHM PERFORMANCE REPORT
+Generated: 2025-05-28 16:33:25
+================================================================================
+
+BASIC INFORMATION
+--------------------------------------------------------------------------------
+Image Name: cat.jpg
+Image Path: C:\Users\User\OneDrive - UNIVERSIDAD DE SEVILLA\Documentos\A Universidad\3-2\IA\Proyecto\AI_project\images\cat.jpg
+Number of Colors: 4
+CONFIGURATION
+--------------------------------------------------------------------------------
+Population Size: 10
+Generations: 15
+Mutation Rate: 0.2
+Crossover Rate: 0.8
+Elitism: 2
+Selection Method: tournament
+Adaptation Rate: 1
+Adaptation Threshold: None
+Halting Stagnation Threshold: None
+Uses KMeans: No
+Uses Diverse Mutation: No
+Crossover Method: closest_pairs
+
+Total Execution Time: 20.92 seconds
+Average Time per Generation: 1.39 seconds
+
+BEST SOLUTION
+--------------------------------------------------------------------------------
+Best Fitness: 0.094666
+Found in Generation: 9
+Best Chromosome:
+  Color 1: RGB(130, 109, 111)
+  Color 2: RGB(208, 185, 186)
+  Color 3: RGB(229, 225, 235)
+  Color 4: RGB(60, 55, 72)
+
+Total Generations: 15
+GENERATION STATISTICS
+--------------------------------------------------------------------------------------------------------------
+Gen | Best Fitness | Avg Fitness | Min Fitness | Stagnation | Mutation Rate | Adapted | Time (s)
+--------------------------------------------------------------------------------------------------------------
+  1 |     0.074227 |    0.055619 |    0.033349 |          0 |     0.200000 | No      |     1.70
+  2 |     0.074227 |    0.043284 |   -0.179296 |          1 |     0.200000 | No      |     1.79
+  3 |     0.085659 |    0.044830 |   -0.209020 |          0 |     0.200000 | No      |     1.48
+  4 |     0.085659 |   -0.131189 |   -0.698482 |          1 |     0.200000 | No      |     1.35
+  5 |     0.089770 |    0.049708 |   -0.189964 |          0 |     0.200000 | No      |     1.28
+  6 |     0.091451 |    0.084297 |    0.070008 |          0 |     0.200000 | No      |     0.92
+  7 |     0.091655 |    0.004306 |   -0.435748 |          0 |     0.200000 | No      |     1.72
+  8 |     0.091655 |    0.033211 |   -0.194359 |          1 |     0.200000 | No      |     0.66
+  9 |     0.094666 |    0.086592 |    0.065663 |          0 |     0.200000 | No      |     0.47
+ 10 |     0.094666 |    0.056373 |   -0.165543 |          1 |     0.200000 | No      |     1.04
+ 11 |     0.094666 |    0.035549 |   -0.172750 |          2 |     0.200000 | No      |     1.52
+ 12 |     0.094666 |    0.087188 |    0.057349 |          3 |     0.200000 | No      |     0.97
+ 13 |     0.094666 |    0.078055 |    0.029440 |          4 |     0.200000 | No      |     1.50
+ 14 |     0.094666 |    0.030540 |   -0.435748 |          5 |     0.200000 | No      |     0.95
+ 15 |     0.094666 |    0.060484 |   -0.171922 |          6 |     0.200000 | No      |     1.02
+
+CACHE STATISTICS
+--------------------------------------------------------------------------------
+Total Evaluations: 150
+Cache Hits: 61 (40.67%)
+Cache Misses: 89

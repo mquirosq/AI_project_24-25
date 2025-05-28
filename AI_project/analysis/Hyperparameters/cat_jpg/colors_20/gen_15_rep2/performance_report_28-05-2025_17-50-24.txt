@@ -1,0 +1,80 @@
+================================================================================
+GENETIC ALGORITHM PERFORMANCE REPORT
+Generated: 2025-05-28 17:50:24
+================================================================================
+
+BASIC INFORMATION
+--------------------------------------------------------------------------------
+Image Name: cat.jpg
+Image Path: C:\Users\User\OneDrive - UNIVERSIDAD DE SEVILLA\Documentos\A Universidad\3-2\IA\Proyecto\AI_project\images\cat.jpg
+Number of Colors: 20
+CONFIGURATION
+--------------------------------------------------------------------------------
+Population Size: 10
+Generations: 15
+Mutation Rate: 0.2
+Crossover Rate: 0.8
+Elitism: 2
+Selection Method: tournament
+Adaptation Rate: 1
+Adaptation Threshold: None
+Halting Stagnation Threshold: None
+Uses KMeans: No
+Uses Diverse Mutation: No
+Crossover Method: closest_pairs
+
+Total Execution Time: 43.69 seconds
+Average Time per Generation: 2.91 seconds
+
+BEST SOLUTION
+--------------------------------------------------------------------------------
+Best Fitness: 0.145096
+Found in Generation: 12
+Best Chromosome:
+  Color 1: RGB(231, 227, 228)
+  Color 2: RGB(36, 25, 33)
+  Color 3: RGB(223, 160, 186)
+  Color 4: RGB(189, 155, 167)
+  Color 5: RGB(83, 52, 44)
+  Color 6: RGB(222, 203, 210)
+  Color 7: RGB(50, 30, 30)
+  Color 8: RGB(81, 69, 73)
+  Color 9: RGB(95, 75, 70)
+  Color 10: RGB(192, 123, 142)
+  Color 11: RGB(55, 36, 40)
+  Color 12: RGB(234, 156, 174)
+  Color 13: RGB(196, 134, 155)
+  Color 14: RGB(208, 126, 140)
+  Color 15: RGB(236, 228, 236)
+  Color 16: RGB(249, 244, 244)
+  Color 17: RGB(202, 186, 189)
+  Color 18: RGB(175, 101, 96)
+  Color 19: RGB(128, 113, 121)
+  Color 20: RGB(182, 150, 151)
+
+Total Generations: 15
+GENERATION STATISTICS
+--------------------------------------------------------------------------------------------------------------
+Gen | Best Fitness | Avg Fitness | Min Fitness | Stagnation | Mutation Rate | Adapted | Time (s)
+--------------------------------------------------------------------------------------------------------------
+  1 |     0.131280 |    0.105005 |    0.087247 |          0 |     0.200000 | No      |     3.48
+  2 |     0.131280 |    0.004552 |   -0.229027 |          1 |     0.200000 | No      |     2.81
+  3 |     0.131280 |    0.010115 |   -0.280821 |          2 |     0.200000 | No      |     2.49
+  4 |     0.134862 |   -0.043717 |   -0.404473 |          0 |     0.200000 | No      |     2.56
+  5 |     0.134862 |   -0.010948 |   -0.361399 |          1 |     0.200000 | No      |     2.79
+  6 |     0.139384 |    0.038484 |   -0.257792 |          0 |     0.200000 | No      |     2.63
+  7 |     0.139384 |   -0.065246 |   -0.322225 |          1 |     0.200000 | No      |     2.65
+  8 |     0.139384 |    0.017392 |   -0.341981 |          2 |     0.200000 | No      |     2.79
+  9 |     0.139384 |    0.010219 |   -0.193610 |          3 |     0.200000 | No      |     3.20
+ 10 |     0.139384 |    0.037156 |   -0.253815 |          4 |     0.200000 | No      |     2.22
+ 11 |     0.144830 |   -0.024455 |   -0.259909 |          0 |     0.200000 | No      |     2.54
+ 12 |     0.145096 |    0.065380 |   -0.137044 |          0 |     0.200000 | No      |     2.60
+ 13 |     0.145096 |    0.018916 |   -0.402629 |          1 |     0.200000 | No      |     2.61
+ 14 |     0.145096 |   -0.008683 |   -0.284289 |          2 |     0.200000 | No      |     2.60
+ 15 |     0.145096 |   -0.036243 |   -0.271171 |          3 |     0.200000 | No      |     2.66
+
+CACHE STATISTICS
+--------------------------------------------------------------------------------
+Total Evaluations: 150
+Cache Hits: 29 (19.33%)
+Cache Misses: 121

@@ -1,0 +1,61 @@
+================================================================================
+GENETIC ALGORITHM PERFORMANCE REPORT
+Generated: 2025-05-13 12:56:53
+================================================================================
+
+BASIC INFORMATION
+--------------------------------------------------------------------------------
+Image Name: chihiro.jpg
+Image Path: c:\Users\User\OneDrive - UNIVERSIDAD DE SEVILLA\Documentos\A Universidad\3-2\IA\Proyecto\AI_project\images\chihiro.jpg
+Number of Colors: 6
+CONFIGURATION
+--------------------------------------------------------------------------------
+Population Size: 20
+Generations: 10
+Mutation Rate: 0.2
+Crossover Rate: 0.8
+Elitism: 2
+Selection Method: tournament
+Adaptation Rate: 1.2
+Adaptation Threshold: 10
+Halting Stagnation Threshold: 20
+Uses KMeans: No
+Uses Diverse Mutation: Yes
+Crossover Method: closest_pairs
+
+Total Execution Time: 58.15 seconds
+Average Time per Generation: 5.82 seconds
+
+BEST SOLUTION
+--------------------------------------------------------------------------------
+Best Fitness: 0.084333
+Found in Generation: 6
+Best Chromosome:
+  Color 1: RGB(28, 43, 76)
+  Color 2: RGB(242, 253, 249)
+  Color 3: RGB(15, 113, 152)
+  Color 4: RGB(45, 44, 62)
+  Color 5: RGB(175, 210, 212)
+  Color 6: RGB(91, 125, 100)
+
+Total Generations: 10
+GENERATION STATISTICS
+--------------------------------------------------------------------------------------------------------------
+Gen | Best Fitness | Avg Fitness | Min Fitness | Stagnation | Mutation Rate | Adapted | Time (s)
+--------------------------------------------------------------------------------------------------------------
+  1 |     0.074435 |    0.051566 |    0.035316 |          0 |     0.200000 | No      |     9.19
+  2 |     0.074435 |   -0.004735 |   -0.302912 |          1 |     0.200000 | No      |     7.37
+  3 |     0.074435 |   -0.074927 |   -0.471125 |          2 |     0.200000 | No      |     7.36
+  4 |     0.074435 |   -0.005679 |   -0.466704 |          3 |     0.200000 | No      |     7.22
+  5 |     0.074435 |    0.009633 |   -0.447501 |          4 |     0.200000 | No      |     4.89
+  6 |     0.084333 |    0.017256 |   -0.436859 |          0 |     0.200000 | No      |     4.65
+  7 |     0.084333 |    0.073667 |    0.056912 |          1 |     0.200000 | No      |     3.74
+  8 |     0.084333 |    0.042472 |   -0.447301 |          2 |     0.200000 | No      |     4.16
+  9 |     0.084333 |    0.053282 |   -0.457967 |          3 |     0.200000 | No      |     2.77
+ 10 |     0.084333 |    0.052950 |   -0.268007 |          4 |     0.200000 | No      |     5.16
+
+CACHE STATISTICS
+--------------------------------------------------------------------------------
+Total Evaluations: 200
+Cache Hits: 89 (44.50%)
+Cache Misses: 111
